@@ -58,7 +58,15 @@ public abstract class AbstractWindow<T> : WrappedBehaviour where T : AbstractWin
 
         Instance.ContentTransform = Instance.BackgroundTransform.Find("Scroll View/Viewport/Content");
 
-        Instance.Init();
+        try
+        {
+            Instance.Init();
+        }
+        catch (Exception e)
+        {
+            LogService.LogError($"Window {pWindowId} Init failed");
+            LogService.LogException(e);
+        }
 
         Instance.Initialized = true;
         

@@ -21,44 +21,51 @@ public sealed class Il2CPPBehaviour : MonoBehaviour
 
     public void OnEnable()
     {
+        if (WrappedBehaviour == null) return;
         onenable?.Invoke(WrappedBehaviour);
     }
 
     public void Start()
     {
-       start?.Invoke(WrappedBehaviour);
+        if (WrappedBehaviour == null) return;
+        start?.Invoke(WrappedBehaviour);
     }
 
     public void OnDisable()
     {
+        if (WrappedBehaviour == null) return;
         ondisable?.Invoke(WrappedBehaviour);
     }
 
     private bool canawake;
     public void Awake()
     {
-        if (!canawake) return;
+        if (!canawake || WrappedBehaviour == null) return;
         awake?.Invoke(WrappedBehaviour);
         canawake = false;
     }
     public void OnDestroy()
     {
+        if (WrappedBehaviour == null) return;
         ondestroy?.Invoke(WrappedBehaviour);
     }
 
     public void Update()
     {
+        if (WrappedBehaviour == null) return;
         WrappedBehaviour.HandleInvokations(Time.deltaTime);
         update?.Invoke(WrappedBehaviour);
     }
 
     public void LateUpdate()
     {
+        if (WrappedBehaviour == null) return;
         lateupdate?.Invoke(WrappedBehaviour);
     }
 
     public void OnGUI()
     {
+        if (WrappedBehaviour == null) return;
         ongui?.Invoke(WrappedBehaviour);
     }
     [HideFromIl2Cpp]

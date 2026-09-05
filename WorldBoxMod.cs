@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 using HarmonyLib;
 using NeoModLoader.AndroidCompatibilityModule;
 using NeoModLoader.api;
@@ -113,18 +113,15 @@ public class WorldBoxMod : BaseBehaviour
         Harmony.CreateAndPatchAll(typeof(ResourcesPatch), Others.harmony_id);
      
         if (!SmoothLoader.isLoading()) SmoothLoader.prepare();
-        SmoothLoaderHelper.add(() =>
-        {
-            ResourcesPatch.Initialize();
-            LoadLocales();
-            LM.ApplyLocale();
-            TabManager._init();
-            WindowCreator.init();
-            WrappedPowersTab._init();
-            NCMSCompatibleLayer.PreInit();
-            ModInfoUtils.InitializeModCompileCache();
-            AndroidHelper.Init();
-        }, "Initialize NeoModLoader");
+        // Each init step is isolated so that one failure (e.g. stripped ICall) does not skip the rest.
+        AddSafeStep(ResourcesPatch.Initialize, "Initialize Resources");
+        AddSafeStep(() => { LoadLocales(); LM.ApplyLocale(); }, "Load Locales");
+        AddSafeStep(TabManager._init, "Initialize Tabs");
+        AddSafeStep(WindowCreator.init, "Initialize Windows");
+        AddSafeStep(WrappedPowersTab._init, "Initialize Powers Tab");
+        AddSafeStep(NCMSCompatibleLayer.PreInit, "NCMS PreInit");
+        AddSafeStep(ModInfoUtils.InitializeModCompileCache, "Initialize Mod Cache");
+        AddSafeStep(AndroidHelper.Init, "Initialize Android Helper");
         ModEnablePlan startup_enable_plan = null;
         List<ModDependencyNode> mod_nodes = new();
         SmoothLoaderHelper.add(() =>
@@ -223,10 +220,26 @@ public class WorldBoxMod : BaseBehaviour
         }, "Compile Mods And Load resources");
     }
     
+    private static void AddSafeStep(Action pAction, string pId)
+    {
+        SmoothLoaderHelper.add(() =>
+        {
+            try
+            {
+                pAction();
+            }
+            catch (Exception e)
+            {
+                LogService.LogError($"Step '{pId}' failed");
+                LogService.LogException(e);
+            }
+        }, pId);
+    }
+
     private void LoadLocales()
     {
         string[] resources = NeoModLoaderAssembly.GetManifestResourceNames();
-        string locale_path = "NeoModLoader.resources.locales.";
+        string locale_path = InternalResourcesGetter.Resource + ".locales.";
         foreach (string resource_path in resources)
         {
             if (!resource_path.StartsWith(locale_path)) continue;

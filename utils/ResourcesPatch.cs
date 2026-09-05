@@ -17,6 +17,15 @@ public static class ResourcesPatch
     private static ResourceTree tree;
 
     /// <summary>
+    ///     UI sprites which are normally taken from SpriteAtlasUI; used by the Android fallback path.
+    /// </summary>
+    public static readonly string[] UiSpriteWhitelist =
+    {
+        "windowInnerSliced", "button2", "special_buttonred", "special_buttonRed", "special_buttonGray",
+        "windowEmptyFrame", "darkInputFieldEmpty", "inputFieldIcon"
+    };
+
+    /// <summary>
     ///     Get all patched resources.
     /// </summary>
     /// <remarks>
@@ -44,21 +53,55 @@ public static class ResourcesPatch
         FMODHelper.InitFMOD();
         
         tree = new ResourceTree();
-        SpriteAtlas atlas = Resources.FindObjectsOfTypeAll<SpriteAtlas>()
-            .FirstOrDefault(x => x.name == "SpriteAtlasUI");
-        var sprites = new Sprite[atlas.spriteCount].C();
-        atlas.GetSprites(sprites);
-        foreach (var sprite in sprites)
+        try
         {
-            sprite.name = sprite.name.Replace("(Clone)", "");
-            tree.Add($"ui/special/{sprite.name}", sprite);
+            SpriteAtlas atlas = Resources.FindObjectsOfTypeAll<SpriteAtlas>()
+                .FirstOrDefault(x => x.name == "SpriteAtlasUI");
+            if (atlas == null) throw new Exception("SpriteAtlasUI not found");
+            var sprites = new Sprite[atlas.spriteCount].C();
+            atlas.GetSprites(sprites);
+            foreach (var sprite in sprites)
+            {
+                sprite.name = sprite.name.Replace("(Clone)", "");
+                tree.Add($"ui/special/{sprite.name}", sprite);
+            }
+        }
+        catch (Exception e)
+        {
+            // On Android the SpriteAtlas ICalls (get_spriteCount/GetSprites) are stripped.
+            // Fallback: pick the few UI sprites we actually need from all loaded sprites (whitelist,
+            // so that LoadAll_Postfix does not replace game sprites with same-named ones).
+            LogService.LogWarning($"SpriteAtlas unavailable ({e.GetType().Name}: {e.Message}), using sprite whitelist fallback");
+            try
+            {
+                var wanted = new HashSet<string>(UiSpriteWhitelist);
+                foreach (var sprite in Resources.FindObjectsOfTypeAll<Sprite>())
+                {
+                    if (sprite == null) continue;
+                    string name = sprite.name.Replace("(Clone)", "");
+                    if (!wanted.Contains(name)) continue;
+                    if (tree.direct_objects.ContainsKey($"ui/special/{name}")) continue;
+                    tree.Add($"ui/special/{name}", sprite);
+                }
+            }
+            catch (Exception e2)
+            {
+                LogService.LogException(e2);
+            }
         }
 
         foreach (var method in typeof(InternalResourcesGetter).GetMethods())
         {
             if (method.ReturnType != typeof(Sprite)) continue;
             if (method.GetParameters().Length != 0) continue;
-            method.Invoke(null, null);
+            try
+            {
+                method.Invoke(null, null);
+            }
+            catch (Exception e)
+            {
+                LogService.LogWarning($"InternalResourcesGetter.{method.Name} failed: {e.Message}");
+            }
         }
     }
 
