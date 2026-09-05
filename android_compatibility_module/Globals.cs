@@ -1,0 +1,10 @@
+#if IL2CPP
+global using ObjectArray = Il2CppInterop.Runtime.InteropTypes.Arrays.Il2CppReferenceArray<UnityEngine.Object>;
+global using SysType = Il2CppSystem.Type;
+global using BaseBehaviour = UnityEngine.MonoBehaviour;
+#else
+global using ObjectArray = UnityEngine.Object[];
+global using SysType = System.Type;
+global using BaseBehaviour = NeoModLoader.AndroidCompatibilityModule.BehaviourStub;
+global using Il2CppSystem = System;
+#endif
