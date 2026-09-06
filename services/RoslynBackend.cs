@@ -198,7 +198,7 @@ internal sealed class RoslynBackend : ICompilerBackend
                                         .Where(d => d.Severity == DiagnosticSeverity.Error).ToList();
                 if (errors.Count == 0) break;
 
-                List<SyntaxTree> rewritten = PcModRewriter.Rewrite(errors, syntaxTrees, parse_option, out int fixes);
+                List<SyntaxTree> rewritten = PcModRewriter.Rewrite(errors, syntaxTrees, parse_option, compilation, out int fixes);
                 if (rewritten == null || fixes == 0) break;
 
                 LogService.LogInfo($"PC-mod compatibility: adapted {fixes} expression(s) in {pModDecl.Name}");

@@ -24,10 +24,8 @@ public static class PcModCompat
     /// <summary>Copies a managed list into the Il2Cpp array expected by Unity APIs.</summary>
     public static Il2CppStructArray<T> A<T>(List<T> pList) where T : unmanaged
     {
-        int count = pList?.Count ?? 0;
-        var result = new Il2CppStructArray<T>(count);
-        for (int i = 0; i < count; i++) result[i] = pList[i];
-        return result;
+        // Il2CppStructArray's array constructor copies the whole block at once, unlike per-element writes.
+        return new Il2CppStructArray<T>(pList?.ToArray() ?? Array.Empty<T>());
     }
 
     /// <summary>Wraps an Il2Cpp UnityAction so that it can be passed where a managed delegate is expected.</summary>

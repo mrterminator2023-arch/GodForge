@@ -26,7 +26,8 @@ internal static class PcModRewriter
     ///     nothing this pass knows how to fix.
     /// </summary>
     public static List<SyntaxTree> Rewrite(IEnumerable<Diagnostic> pDiagnostics, List<SyntaxTree> pTrees,
-                                           CSharpParseOptions pParseOptions, out int pFixCount)
+                                           CSharpParseOptions pParseOptions, Compilation pCompilation,
+                                           out int pFixCount)
     {
         pFixCount = 0;
         var edits = new Dictionary<SyntaxTree, List<(TextSpan span, string text)>>();
@@ -37,7 +38,7 @@ internal static class PcModRewriter
             SyntaxTree tree = diagnostic.Location.SourceTree;
             if (tree == null || !pTrees.Contains(tree)) continue;
 
-            (TextSpan span, string text)? edit = BuildEdit(diagnostic, tree);
+            (TextSpan span, string text)? edit = BuildEdit(diagnostic, tree, pCompilation);
             if (edit == null) continue;
 
             if (!edits.TryGetValue(tree, out List<(TextSpan, string)> list))
@@ -67,7 +68,46 @@ internal static class PcModRewriter
         return result;
     }
 
-    private static (TextSpan span, string text)? BuildEdit(Diagnostic pDiagnostic, SyntaxTree pTree)
+    /// <summary>
+    ///     Full name of the parameter the expression is passed as, so the generated code does not depend on the
+    ///     using directives of the mod's file.
+    /// </summary>
+    private static string ParameterTypeOf(SyntaxNode pExpression, Compilation pCompilation)
+    {
+        if (pExpression.Parent is not ArgumentSyntax argument ||
+            argument.Parent is not ArgumentListSyntax arguments) return null;
+
+        SemanticModel model = pCompilation.GetSemanticModel(pExpression.SyntaxTree);
+        SymbolInfo info = model.GetSymbolInfo(arguments.Parent!);
+        var method = (info.Symbol ?? info.CandidateSymbols.FirstOrDefault()) as IMethodSymbol;
+        if (method == null) return null;
+
+        int index = arguments.Arguments.IndexOf(argument);
+        if (index < 0 || index >= method.Parameters.Length) return null;
+        return method.Parameters[index].Type.ToDisplayString();
+    }
+
+    /// <summary>True when the called method has an overload taking an Il2Cpp array in this argument position.</summary>
+    private static bool TakesArrayInstead(SyntaxNode pExpression, Compilation pCompilation)
+    {
+        if (pExpression.Parent is not ArgumentSyntax argument ||
+            argument.Parent is not ArgumentListSyntax arguments) return false;
+
+        SemanticModel model = pCompilation.GetSemanticModel(pExpression.SyntaxTree);
+        SymbolInfo info = model.GetSymbolInfo(arguments.Parent!);
+        int index = arguments.Arguments.IndexOf(argument);
+        if (index < 0) return false;
+
+        IEnumerable<ISymbol> candidates = info.CandidateSymbols;
+        if (info.Symbol != null) candidates = candidates.Append(info.Symbol);
+
+        return candidates.OfType<IMethodSymbol>().Any(m => index < m.Parameters.Length &&
+                                                           m.Parameters[index].Type.Name.StartsWith("Il2Cpp") &&
+                                                           m.Parameters[index].Type.Name.EndsWith("Array"));
+    }
+
+    private static (TextSpan span, string text)? BuildEdit(Diagnostic pDiagnostic, SyntaxTree pTree,
+                                                           Compilation pCompilation)
     {
         string message = pDiagnostic.GetMessage();
         SyntaxNode root = pTree.GetRoot();
@@ -92,7 +132,7 @@ internal static class PcModRewriter
             {
                 Match match = ToType.Match(message);
                 if (!match.Success) return null;
-                string target = match.Groups[1].Value;
+                string target = ParameterTypeOf(expression, pCompilation) ?? match.Groups[1].Value;
                 return (span, $"NeoModLoader.AndroidCompatibilityModule.IL2CPPHelper.C<{target}>({original})");
             }
 
@@ -103,6 +143,17 @@ internal static class PcModRewriter
                 if (!match.Success) return null;
                 string target = match.Groups[2].Value;
                 if (target.StartsWith("Il2Cpp")) return null;
+
+                // Object.Instantiate(SomePrefab.Prefab, parent) is how PC mods spawn our UI prefabs; our own
+                // typed factory returns the concrete type, so use it instead of casting the base Object.
+                if (expression is InvocationExpressionSyntax invocation &&
+                    invocation.Expression.ToString().EndsWith("Instantiate") &&
+                    invocation.ArgumentList.Arguments.Count >= 1)
+                {
+                    var tail = invocation.ArgumentList.Arguments.Skip(1).Select(a => a.ToString());
+                    return (span, $"{target}.Instantiate({string.Join(", ", tail)})");
+                }
+
                 return (span, $"({original}).Cast<{target}>()");
             }
 
@@ -131,6 +182,10 @@ internal static class PcModRewriter
 
                 if (from.StartsWith("System.Collections.Generic.List<"))
                 {
+                    // Copying element by element across the Il2Cpp boundary is ruinous for mesh-sized lists;
+                    // if the API also takes an array, hand it one (that copy is a single block move).
+                    if (to.Contains("Il2CppSystem.Collections.Generic.List<") && TakesArrayInstead(expression, pCompilation))
+                        return (span, $"NeoModLoader.utils.PcModCompat.A({original})");
                     if (to.Contains("Il2CppSystem.Collections.Generic.List<"))
                         return (span, $"NeoModLoader.utils.PcModCompat.L({original})");
                     if (to.Contains("Il2CppStructArray<") || to.Contains("Il2CppReferenceArray<"))
