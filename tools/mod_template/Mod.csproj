@@ -1,0 +1,45 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Generic csproj for building a precompiled WBML mod. Driven by tools/build_mod.sh:
+       ModDir     = mod folder containing mod.json and Code/**.cs
+       ModGuid    = value of "GUID" from mod.json (output assembly name)
+       WbmlRoot   = WBML repo root (WBML.dll + android-assembly-dependencies)
+       Il2CppDir  = optional folder with Il2CppAssemblies dumped from the phone (preferred over repo copies) -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>IL2CPP;WBML</DefineConstants>
+    <AssemblyName>$(ModGuid)</AssemblyName>
+    <RootNamespace>$(ModGuid)</RootNamespace>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <CopyLocalLockFileAssemblies>false</CopyLocalLockFileAssemblies>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <DebugType>portable</DebugType>
+    <OutDir>$(ModDir)/</OutDir>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
+    <NoWarn>CS1591;CS8632;MSB3277</NoWarn>
+    <WbmlDll>$(WbmlRoot)/bin/Release/net8.0/WBML.dll</WbmlDll>
+    <DepsDir>$(WbmlRoot)/android-assembly-dependencies</DepsDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(ModDir)/Code/**/*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="WBML"><HintPath>$(WbmlDll)</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+
+  <!-- Game/Unity/Il2Cpp assemblies from the phone dump take priority; repo copies fill the rest -->
+  <ItemGroup Condition="'$(Il2CppDir)' != '' and Exists('$(Il2CppDir)')">
+    <Il2CppRef Include="$(Il2CppDir)/*.dll" />
+    <Reference Include="@(Il2CppRef)"><Private>false</Private></Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <DepsRef Include="$(DepsDir)/*.dll" Exclude="@(Il2CppRef->'$(DepsDir)/%(Filename)%(Extension)')" />
+    <Reference Include="@(DepsRef)"><Private>false</Private></Reference>
+  </ItemGroup>
+</Project>
