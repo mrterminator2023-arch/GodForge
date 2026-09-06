@@ -645,7 +645,7 @@ public class PCInputSystem : WrappedBehaviour
             GUI.Window(69, MainWindow, MouseWindowFunction, "Mouse Manager");
             GUI.Box(MouseSystem.GetMouseRect(Helper.GetButtonSize("Cursor")), "Cursor");
         }
-        else
+        else if (NeoModLoader.constants.Branding.ShowPCInputOverlay)
         {
             if (GUI.Button(MainButton, "PCInput"))
             {

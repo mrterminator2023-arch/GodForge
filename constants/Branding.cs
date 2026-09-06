@@ -33,6 +33,9 @@ public static class Branding
         "We learned a great deal from their code and are grateful to its authors.\n\n" +
         "See CREDITS.md and LICENSE-NeoModLoader shipped with WBML.";
 
+    /// <summary>Show the "PCInput" / "MouseMode" buttons of the PC input overlay in the top-left corner. Input handling works regardless.</summary>
+    public const bool ShowPCInputOverlay = false;
+
     /// <summary>Decoration: small translucent logos drifting on the mods window background. Set false to disable.</summary>
     public const bool FloatingLogos = true;
 
