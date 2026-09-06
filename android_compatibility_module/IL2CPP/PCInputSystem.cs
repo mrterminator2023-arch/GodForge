@@ -630,6 +630,13 @@ public class PCInputSystem : WrappedBehaviour
     internal static GUIStyle BoxStyle;
     private void OnGUI()
     {
+        // With the overlay hidden there is nothing to draw, and OnGUI runs several times per frame
+        // (layout + repaint + every input event): keep input state fresh, skip all drawing.
+        if (!NeoModLoader.constants.Branding.ShowPCInputOverlay && CurrentMode == Mode.None)
+        {
+            if (Event.current.type == EventType.Layout) CheckInputs();
+            return;
+        }
         BoxStyle ??= GUI.skin.box;
         DrawButtons();
         if (CurrentMode == Mode.Editing)

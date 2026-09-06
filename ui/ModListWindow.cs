@@ -30,7 +30,7 @@ public class ModListWindow : AbstractListWindow<ModListWindow, IMod>
         if (!IsOpened) return;
         if (needRefresh)
         {
-            if (to_add.Any())
+            if (to_add.Count > 0)
             {
                 AddItemToList(to_add.Dequeue());
                 return;
