@@ -184,13 +184,28 @@ internal sealed class RoslynBackend : ICompilerBackend
             pModDecl.UID, pModDecl.ParseVersion(), null
         );
 
-        var compilation = CSharpCompilation.Create(
-            $"{pModDecl.UID}",
-            syntaxTrees,
-            list,
-            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
-                allowUnsafe: true, deterministic: true, assemblyIdentityComparer: AssemblyIdentityComparer.Default)
-        );
+        var compilation_options = new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
+            allowUnsafe: true, deterministic: true, assemblyIdentityComparer: AssemblyIdentityComparer.Default);
+        var compilation = CSharpCompilation.Create($"{pModDecl.UID}", syntaxTrees, list, compilation_options);
+
+        // Mods written for the PC loader hit Il2Cpp-only type mismatches (lambdas, managed Type/List, Object results).
+        // Let the compiler point at them, rewrite exactly those expressions and try again.
+        if (Others.IsIL2CPP)
+        {
+            for (int pass = 0; pass < 3; pass++)
+            {
+                var errors = compilation.GetDiagnostics()
+                                        .Where(d => d.Severity == DiagnosticSeverity.Error).ToList();
+                if (errors.Count == 0) break;
+
+                List<SyntaxTree> rewritten = PcModRewriter.Rewrite(errors, syntaxTrees, parse_option, out int fixes);
+                if (rewritten == null || fixes == 0) break;
+
+                LogService.LogInfo($"PC-mod compatibility: adapted {fixes} expression(s) in {pModDecl.Name}");
+                syntaxTrees = rewritten;
+                compilation = CSharpCompilation.Create($"{pModDecl.UID}", syntaxTrees, list, compilation_options);
+            }
+        }
 
         using MemoryStream dllms = new MemoryStream();
         using MemoryStream pdbms = new MemoryStream();
