@@ -1,3 +1,4 @@
+using System;
 #if !IL2CPP
 extern alias unixsteamwork;
 using unixsteamwork::Steamworks;
@@ -171,9 +172,17 @@ internal static class ModInfoUtils
     {
         HashSet<string> findModsIDs = new();
         var mods = new List<ModDeclare>();
+
+        // Mods dropped as .zip are unpacked in place first, so both folders below see plain mod folders.
+        ModArchiveInstaller.InstallArchives(Paths.ModsPath);
+        ModArchiveInstaller.InstallArchives(Paths.UserModsPath);
+
         if (!NCMSHere())
         {
             CheckModsFolder(Paths.ModsPath, findModsIDs, mods);
+            // Short user-facing folder (/sdcard/<Name>/Mods on Android); same rules as the folder above.
+            if (!string.Equals(Paths.UserModsPath, Paths.ModsPath, StringComparison.OrdinalIgnoreCase))
+                CheckModsFolder(Paths.UserModsPath, findModsIDs, mods);
         }
 
         CheckModsFolder(Paths.NativeModsPath, findModsIDs, mods, false);

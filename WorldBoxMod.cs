@@ -250,6 +250,12 @@ public class WorldBoxMod : BaseBehaviour
             Directory.CreateDirectory(Paths.ModsPath);
             LogService.LogInfo($"Create Mods folder at {Paths.ModsPath}");
         }
+        if (!Directory.Exists(Paths.UserModsPath))
+        {
+            Directory.CreateDirectory(Paths.UserModsPath);
+            LogService.LogInfo($"Create user Mods folder at {Paths.UserModsPath}");
+        }
+
         if (!Directory.Exists(Paths.CompiledModsPath))
         {
             Directory.CreateDirectory(Paths.CompiledModsPath);

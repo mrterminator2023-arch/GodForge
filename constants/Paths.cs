@@ -86,6 +86,14 @@ public static class Paths
         Others.is_editor ? Combine(GamePath, "Assets", "Mods") : Combine(GamePath, Config.isAndroid ? "NMLMods" : "Mods");
 
     /// <summary>
+    ///     Short, easy to reach mods folder: /sdcard/&lt;Name&gt;/Mods on Android (GamePath sits two levels below
+    ///     the storage root), a "Mods" folder next to the game elsewhere. Drop a mod folder or a .zip in here.
+    /// </summary>
+    public static readonly string UserModsPath = Config.isAndroid
+        ? Combine(GamePath, "..", "..", Branding.Name, "Mods")
+        : ModsPath;
+
+    /// <summary>
     /// Path to extracted Assemblies cache
     /// </summary>
     public static readonly string NMLAssembliesPath = Combine(NMLPath, "Assemblies");

@@ -176,7 +176,7 @@ public class ModListWindow : AbstractListWindow<ModListWindow, IMod>
         {
             _empty_state.SetActive(total == 0);
             if (total == 0 && _empty_hint != null)
-                _empty_hint.text = LM.Get("gfml_no_mods_hint") + "\n" + UiSkin.Col(Paths.ModsPath, UiSkin.Accent);
+                _empty_hint.text = LM.Get("gfml_no_mods_hint") + "\n" + UiSkin.Col(Paths.UserModsPath, UiSkin.Accent);
         }
     }
 
