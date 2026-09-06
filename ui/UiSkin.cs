@@ -156,15 +156,13 @@ public static class UiSkin
     }
 
     /// <summary>
-    ///     Small round icon button: disc background + icon sprite. Returns the Button (Image + Button + TipButton on root).
+    ///     Small round icon button: disc background + icon sprite. No hover tooltip: this is a touch UI.
     /// </summary>
     public static Button IconButton(string name, Transform parent, Sprite icon, Color bg, Color iconTint,
-        Vector2 pos, float diameter, string tipKey)
+        Vector2 pos, float diameter)
     {
         Image disc = Img(name, parent, Circle(Mathf.RoundToInt(diameter)), bg, pos, new Vector2(diameter, diameter),
-            false, true, typeof(Button), typeof(TipButton));
-        TipButton tip = disc.GetComponent<TipButton>();
-        tip.textOnClick = tipKey;
+            false, true, typeof(Button));
         Img("Icon", disc.transform, icon, iconTint, Vector2.zero, new Vector2(diameter * 0.66f, diameter * 0.66f));
         return disc.GetComponent<Button>();
     }
