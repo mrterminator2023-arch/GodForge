@@ -105,8 +105,6 @@ public class WorldBoxMod : BaseBehaviour
         }
 
         initialized = true;
-        if(!Config.isAndroid)
-            ModUploadAuthenticationService.AutoAuth();
         
         HarmonyUtils._init();
         Harmony.CreateAndPatchAll(typeof(LM), Others.harmony_id);
@@ -126,8 +124,6 @@ public class WorldBoxMod : BaseBehaviour
         List<ModDependencyNode> mod_nodes = new();
         SmoothLoaderHelper.add(() =>
         {
-            ModCompileLoadService.loadInfoOfBepInExPlugins();
-
             ModInfoUtils.findAndPrepareMods();
             ModDepenSolveService.InitializeGraph(AllRecognizedMods.Keys);
             startup_enable_plan = ModDepenSolveService.BuildStartupEnablePlan();
@@ -208,15 +204,12 @@ public class WorldBoxMod : BaseBehaviour
 
             SmoothLoaderHelper.add(() =>
             {
-                ModWorkshopService.Init();
                 UIManager.init();
 
-                ModInfoUtils.DealWithBepInExModLinkRequests();
 
                 LM.ApplyLocale();
                 initialized_successfully = true;
             }, "NeoModLoader Post Initialize");
-            SmoothLoaderHelper.add(ExternalModInstallService.CheckExternalModInstall, "Check External Mods to Install");
         }, "Compile Mods And Load resources");
     }
     
@@ -282,7 +275,6 @@ public class WorldBoxMod : BaseBehaviour
                 if (resource.EndsWith(".dll"))
                 {
                     if (resource.Contains("Assembly-CSharp-Publicized")) continue;
-                    if (resource.Contains("AutoUpdate")) continue;
                     var file_name = resource.Replace($"NeoModLoader{name}.resources.assemblies.", "");
                     var file_path = Path.Combine(Paths.NMLAssembliesPath, file_name).Replace("-renamed", "");
 
@@ -371,29 +363,5 @@ public class WorldBoxMod : BaseBehaviour
         }
 
         File.WriteAllText(Paths.NMLCommitPath, InternalResourcesGetter.GetCommit());
-        if (File.Exists(Paths.NMLAutoUpdateModulePath))
-        {
-            FileInfo file = new(Paths.NMLAutoUpdateModulePath);
-            if (file.LastWriteTimeUtc.Ticks < InternalResourcesGetter.GetLastWriteTime())
-                try
-                {
-                    file.Delete();
-                    LogService.LogInfo($"NeoModLoader.dll is newer than AutoUpdate.dll, " +
-                                       $"re-extract AutoUpdate.dll from NeoModLoader.dll");
-                }
-                catch (Exception e)
-                {
-                    // ignored
-                }
-        }
-
-        if (!File.Exists(Paths.NMLAutoUpdateModulePath))
-        {
-            using Stream stream = NeoModLoaderAssembly.GetManifestResourceStream(
-                $"NeoModLoader{name}.resources.assemblies.NeoModLoader.AutoUpdate{name}.dll");
-            using var file = new FileStream(Paths.NMLAutoUpdateModulePath, FileMode.CreateNew, FileAccess.Write);
-            stream.CopyTo(file);
-        }
-        
     }
 }

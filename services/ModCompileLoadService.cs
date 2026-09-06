@@ -712,12 +712,6 @@ public static class ModCompileLoadService
     public static bool TryCompileModAtRuntime(ModDeclare pModDeclare, bool pForce = false)
     {
         pModDeclare = ModInfoUtils.EnsureRecognizedMod(pModDeclare);
-        if (pModDeclare.ModType == ModTypeEnum.BEPINEX)
-        {
-            ModInfoUtils.LinkBepInExModToLocalRequest(pModDeclare);
-            ModInfoUtils.DealWithBepInExModLinkRequests();
-            return false;
-        }
 
         ModDependencyNode node = ModDepenSolveService.EnsureNode(pModDeclare);
         bool success = TryCompileRuntimeNode(node, pForce);
@@ -744,12 +738,6 @@ public static class ModCompileLoadService
 
         if (actually_loaded) return false;
 
-        if (mod_declare.ModType == ModTypeEnum.BEPINEX)
-        {
-            ModInfoUtils.LinkBepInExModToLocalRequest(mod_declare);
-            ModInfoUtils.DealWithBepInExModLinkRequests();
-            return false;
-        }
         
         ModEnablePlan plan = ModDepenSolveService.BuildRuntimeEnablePlan(mod_declare);
         if (plan.HasFailure)
@@ -832,44 +820,5 @@ public static class ModCompileLoadService
     public static void DisableMod(ModDeclare pModDeclare)
     {
         ModDepenSolveService.SetModDesiredEnabled(pModDeclare, false);
-    }
-
-    /// <summary>
-    /// Load information of all BepInEx plugins which is made only for Worldbox
-    /// </summary>
-    public static void loadInfoOfBepInExPlugins()
-    {
-        List<ModDeclare> bepInExMods = ModInfoUtils.recogBepInExMods();
-
-        GameObject bepinexManager = GameObject.Find("BepInEx_Manager");
-        foreach (var mod in bepInExMods)
-        {
-            ModDeclare recognized_mod = ModInfoUtils.EnsureRecognizedMod(mod);
-            if (IsModLoaded(mod.UID))
-            {
-                LogService.LogWarning($"Repeat Mod with {mod.UID}, Only load one of them");
-                continue;
-            }
-
-            BepinexMod virtualMod = new();
-            MonoBehaviour virtualModComponent = null;
-
-            // try to find the GameObject of the mod
-            if (bepinexManager != null)
-            {
-                var bepinexComponents = bepinexManager.GetComponents<MonoBehaviour>();
-                foreach (MonoBehaviour component in bepinexComponents.Where(component =>
-                             (component.GetType().FullName ?? "").Contains(mod.Name)))
-                {
-                    virtualModComponent = component;
-                    break;
-                }
-            }
-
-            virtualMod.OnLoad(recognized_mod, virtualModComponent);
-            WorldBoxMod.LoadedMods.Add(virtualMod);
-            WorldBoxMod.AllRecognizedMods[recognized_mod] = ModState.LOADED;
-            ModDepenSolveService.MarkModLoaded(recognized_mod);
-        }
     }
 }

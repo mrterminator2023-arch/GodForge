@@ -42,31 +42,6 @@ public class ModListWindow : AbstractListWindow<ModListWindow, IMod>
     /// <inheritdoc cref="AbstractListWindow{T,TItem}.Init" />
     protected override void Init()
     {
-        if (!Config.isAndroid)
-        {
-            GameObject workshopButton =
-                CreateGameObject("WorkshopButton", typeof(Image), typeof(Button), typeof(TipButton));
-            workshopButton.transform.SetParent(BackgroundTransform);
-            workshopButton.transform.localPosition = new Vector3(140, 0);
-            workshopButton.transform.localScale = Vector3.one;
-            workshopButton.GetComponent<RectTransform>().sizeDelta = new(20, 20);
-            Image workshopButtonImage = workshopButton.GetComponent<Image>();
-            workshopButtonImage.sprite = Resources.Load<Sprite>("ui/icons/iconSteam");
-            Button workshopButtonButton = workshopButton.GetComponent<Button>();
-            workshopButtonButton.onClick.AddListener(() =>
-            {
-                if (Others.is_editor)
-                {
-                    InformationWindow.ShowWindow("WorkshopMods Window is not supported in editor environment");
-                    return;
-                }
-
-                ScrollWindow.showWindow("WorkshopMods");
-            });
-            TipButton workshopButtonTipButton = workshopButton.GetComponent<TipButton>();
-            workshopButtonTipButton.textOnClick = "WorkshopMods Title";
-        }
-
         GameObject modloaderButton =
             CreateGameObject("ModLoaderButton", typeof(Image), typeof(Button), typeof(TipButton));
         modloaderButton.transform.SetParent(BackgroundTransform);
@@ -236,11 +211,6 @@ public class ModListWindow : AbstractListWindow<ModListWindow, IMod>
     public class ModListItem : AbstractListWindowItem<IMod>
     {
         private IMod _mod;
-        private IEnumerator WaitOpenWindow()
-        {
-            yield return new WaitForSeconds(3f);
-            if (Instance.clickTimes == 8) ModUploadWindow.ShowWindow(_mod);
-        }
         /// <inheritdoc cref="AbstractListWindowItem{TItem}.Setup" />
         /// <param name="mod">The mod to display</param>
         public override void Setup(IMod mod)
@@ -316,30 +286,6 @@ public class ModListWindow : AbstractListWindow<ModListWindow, IMod>
             open_folder_button.onClick.RemoveAllListeners();
             open_folder_button.onClick.AddListener(() => { Application.OpenURL(mod_declare.FolderPath); });
 
-            if (mod_state == ModState.LOADED)
-            {
-                icon.GetComponent<Button>().onClick.AddListener(() =>
-                {
-                    float current_time = Time.time;
-                    if (current_time - Instance.lastClickTime > 1)
-                    {
-                        Instance.clickTimes = 0;
-                    }
-
-                    if (mod_declare != Instance.clickedMod)
-                    {
-                        Instance.clickedMod = mod_declare;
-                        Instance.clickTimes = 0;
-                    }
-
-                    Instance.lastClickTime = current_time;
-                    Instance.clickTimes++;
-                    if (Instance.clickTimes == 8)
-                    {
-                        StartCoroutine(WaitOpenWindow());
-                    }
-                });
-            }
 
             void RefreshToggleState()
             {
@@ -392,28 +338,8 @@ public class ModListWindow : AbstractListWindow<ModListWindow, IMod>
             });
             website_button.onClick.AddListener(() => { Application.OpenURL(mod.GetUrl()); });
 
-            if (!Config.isEditor)
-            {
-                transform.Find("Reload").gameObject.SetActive(false);
-                return;
-            }
-
-            if (!ModReloadService.CanReload(mod_declare))
-            {
-                transform.Find("Reload").gameObject.SetActive(false);
-                return;
-            }
-
-            var reload_button = transform.Find("Reload").GetComponent<Button>();
-            reload_button.gameObject.SetActive(true);
-            reload_button.onClick.RemoveAllListeners();
-            reload_button.onClick.AddListener(() =>
-            {
-                if (!ModReloadService.ReloadMod(mod_declare))
-                {
-                    LogService.LogWarning($"Failed to reload mod {mod_declare.Name}.");
-                }
-            });
+            // Hot-reload (ModReloadService) removed in WBML.
+            transform.Find("Reload").gameObject.SetActive(false);
         }
     }
 }
