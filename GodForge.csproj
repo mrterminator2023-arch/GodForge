@@ -160,4 +160,9 @@
       <Exec Command="sh ./before_build.sh" Condition=" '$(OS)' != 'Windows_NT' " />
     </Target>
   
+  <ItemGroup>
+    <!-- Example mods are built by tools/build_mod.sh against the loader, not compiled into it. -->
+    <Compile Remove="examples/**" />
+    <None Remove="examples/**" />
+  </ItemGroup>
 </Project>
