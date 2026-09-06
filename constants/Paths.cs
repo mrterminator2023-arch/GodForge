@@ -49,18 +49,13 @@ public static class Paths
     /// <summary>
     /// Path to folder contains NML's cache
     /// </summary>
-    public static readonly string NMLPath = Combine(NativeModsPath, "NML");
+    public static readonly string NMLPath = Combine(NativeModsPath, Branding.CacheFolder);
 
     /// <summary>
     ///     Path to file contains NML's commit hash
     /// </summary>
     public static readonly string NMLCommitPath = Combine(NMLPath, "commit");
 
-    /// <summary>
-    ///     Path to file of auto update module
-    /// </summary>
-    public static readonly string NMLAutoUpdateModulePath =
-        Combine(NativeModsPath, Config.isAndroid ? "NeoModLoader.AutoUpdate_mobile_memload.dll" : "NeoModLoader.AutoUpdate_memload.dll");
 
     /// <summary>
     /// Path to the publicized Assembly-CSharp.dll file, on android this is used as IL replacements for transpiler support
@@ -171,8 +166,8 @@ public static class Paths
         var nml_mod_path = Assembly.GetExecutingAssembly().Location;
         if (string.IsNullOrEmpty(nml_mod_path))
         {
-            nml_mod_path = Combine(NativeModsPath, "NeoModLoader.dll");
-            if (!File.Exists(nml_mod_path)) nml_mod_path = Combine(NativeModsPath, "NeoModLoader_memload.dll");
+            nml_mod_path = Combine(NativeModsPath, Branding.Name + ".dll");
+            if (!File.Exists(nml_mod_path)) nml_mod_path = Combine(NativeModsPath, Branding.Name + "_memload.dll");
         }
         NMLModPath = nml_mod_path;
     }

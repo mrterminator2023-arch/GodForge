@@ -8,7 +8,7 @@ public static class CoreConstants
     /// <summary>
     /// Name of this mod loader as a game native mod
     /// </summary>
-    public const string ModName = "NeoModLoader";
+    public const string ModName = Branding.Name;
 
     /// <summary>
     /// Organization name for this mod loader on GitHub

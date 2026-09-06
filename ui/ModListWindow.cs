@@ -1,3 +1,4 @@
+using WBML;
 using System.Collections;
 
 using static NeoModLoader.AndroidCompatibilityModule.IL2CPPHelper;
@@ -51,13 +52,13 @@ public class ModListWindow : AbstractListWindow<ModListWindow, IMod>
         Image modloaderButtonImage = modloaderButton.GetComponent<Image>();
         modloaderButtonImage.sprite = InternalResourcesGetter.GetIcon();
         TipButton modloaderButtonTipButton = modloaderButton.GetComponent<TipButton>();
-        modloaderButtonTipButton.textOnClick = "NeoModLoader-v" + WorldBoxMod.NeoModLoaderAssembly.GetName().Version;
+        modloaderButtonTipButton.textOnClick = Branding.Name + " v" + Branding.Version;
         foreach (var lang in LocalizedTextManager.getAllLanguages())
-            LM.Add(lang, "NMLCommit", $"commit\n{InternalResourcesGetter.GetCommit()}");
-        modloaderButtonTipButton.text_description_2 = "NMLCommit";
-        modloaderButtonTipButton.textOnClickDescription = "NeoModLoader Report";
+            LM.Add(lang, "WBMLCommit", $"commit\n{InternalResourcesGetter.GetCommit()}");
+        modloaderButtonTipButton.text_description_2 = "WBMLCommit";
+        modloaderButtonTipButton.textOnClickDescription = "WBML About";
         Button modloaderButtonButton = modloaderButton.GetComponent<Button>();
-        modloaderButtonButton.onClick.AddListener(() => { Application.OpenURL(CoreConstants.RepoURL); });
+        modloaderButtonButton.onClick.AddListener(() => { InformationWindow.ShowWindow(Branding.AboutText); });
     }
 
     /// <inheritdoc cref="AbstractListWindow{T,TItem}.OnNormalEnable" />

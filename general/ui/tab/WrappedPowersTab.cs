@@ -1,3 +1,4 @@
+using WBML;
 using System.Runtime.CompilerServices;
 
 using NeoModLoader.utils;

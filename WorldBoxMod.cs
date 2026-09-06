@@ -1,4 +1,5 @@
 using System.Reflection;
+using NeoModLoader;
 using HarmonyLib;
 using NeoModLoader.AndroidCompatibilityModule;
 using NeoModLoader.api;
@@ -11,7 +12,7 @@ using NeoModLoader.ui;
 using NeoModLoader.utils;
 using UnityEngine;
 using Il2CppInterop.Runtime.Injection;
-namespace NeoModLoader;
+namespace WBML;
 /// <summary>
 /// Main class
 /// </summary>
@@ -89,7 +90,7 @@ public class WorldBoxMod : BaseBehaviour
             UnityExplorerFix();
         }
         fileSystemInitialize();
-        LogService.LogInfo($"NeoModLoader Version: {InternalResourcesGetter.GetCommit()}");
+        LogService.LogInfo($"{Branding.Name} v{Branding.Version} (commit {InternalResourcesGetter.GetCommit()})");
     }
     private void Update()
     {
@@ -209,7 +210,7 @@ public class WorldBoxMod : BaseBehaviour
 
                 LM.ApplyLocale();
                 initialized_successfully = true;
-            }, "NeoModLoader Post Initialize");
+            }, Branding.Name + " Post Initialize");
         }, "Compile Mods And Load resources");
     }
     
@@ -266,7 +267,6 @@ public class WorldBoxMod : BaseBehaviour
             File.Create(Paths.ModCompileRecordPath).Close();
             LogService.LogInfo($"Create mod_compile_records.json at {Paths.ModCompileRecordPath}");
         }
-        string name = Config.isAndroid ? "_mobile" : "";
         void extractAssemblies()
         {
             var resources = NeoModLoaderAssembly.GetManifestResourceNames();
@@ -275,7 +275,7 @@ public class WorldBoxMod : BaseBehaviour
                 if (resource.EndsWith(".dll"))
                 {
                     if (resource.Contains("Assembly-CSharp-Publicized")) continue;
-                    var file_name = resource.Replace($"NeoModLoader{name}.resources.assemblies.", "");
+                    var file_name = resource.Replace(InternalResourcesGetter.Resource + ".assemblies.", "");
                     var file_path = Path.Combine(Paths.NMLAssembliesPath, file_name).Replace("-renamed", "");
 
                     using var stream = NeoModLoaderAssembly.GetManifestResourceStream(resource);
@@ -298,8 +298,8 @@ public class WorldBoxMod : BaseBehaviour
             var assemblyupdate_time = new DirectoryInfo(Paths.NMLAssembliesPath).CreationTime;
             if (modupdate_time > assemblyupdate_time)
             {
-                LogService.LogInfo($"NeoModLoader.dll is newer than assemblies in NMLAssemblies folder, " +
-                                   $"re-extract assemblies from NeoModLoader.dll");
+                LogService.LogInfo($"{Branding.Name}.dll is newer than assemblies in NMLAssemblies folder, " +
+                                   $"re-extract assemblies from {Branding.Name}.dll");
                 Debug.Log(Paths.NMLAssembliesPath);
                 Directory.Delete(Paths.NMLAssembliesPath, true);
                 Directory.CreateDirectory(Paths.NMLAssembliesPath);
@@ -311,15 +311,15 @@ public class WorldBoxMod : BaseBehaviour
         {
             using var stream =
                 NeoModLoaderAssembly.GetManifestResourceStream(
-                    $"NeoModLoader{name}.resources.assemblies.Assembly-CSharp-Publicized.dll");
+                    InternalResourcesGetter.Resource + ".assemblies.Assembly-CSharp-Publicized.dll");
             if (File.Exists(Paths.PublicizedAssemblyPath))
             {
                 var modupdate_time = new FileInfo(Paths.NMLModPath).LastWriteTime;
                 var assemblyupdate_time = new FileInfo(Paths.PublicizedAssemblyPath).CreationTime;
                 if (modupdate_time > assemblyupdate_time)
                 {
-                    LogService.LogInfo($"NeoModLoader.dll is newer than Assembly-CSharp-Publicized.dll, " +
-                                       $"re-extract Assembly-CSharp-Publicized.dll from NeoModLoader.dll");
+                    LogService.LogInfo($"{Branding.Name}.dll is newer than Assembly-CSharp-Publicized.dll, " +
+                                       $"re-extract Assembly-CSharp-Publicized.dll from {Branding.Name}.dll");
                     File.Delete(Paths.PublicizedAssemblyPath);
                     using var file = new FileStream(Paths.PublicizedAssemblyPath, FileMode.Create,
                         FileAccess.Write);
@@ -337,7 +337,7 @@ public class WorldBoxMod : BaseBehaviour
             File.Delete(Paths.PublicizedAssemblyPath);
             using var stream =
                 NeoModLoaderAssembly.GetManifestResourceStream(
-                    $"NeoModLoader{name}.resources.assemblies.Assembly-CSharp-Publicized.dll");
+                    InternalResourcesGetter.Resource + ".assemblies.Assembly-CSharp-Publicized.dll");
             using var file = new FileStream(Paths.PublicizedAssemblyPath, FileMode.CreateNew, FileAccess.Write);
             stream.CopyTo(file);
         }

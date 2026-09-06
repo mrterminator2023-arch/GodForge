@@ -4,6 +4,7 @@ using DG.Tweening;
 using Il2CppDG.Tweening;
 #endif
 
+using WBML;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;

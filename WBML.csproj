@@ -7,19 +7,13 @@
         <Nullable>disable</Nullable>
         <LangVersion>14</LangVersion>
         <GenerateDocumentationFile>True</GenerateDocumentationFile>
-        <Authors>WorldBoxOpenMods</Authors>
-        <PackageProjectUrl>https://github.com/WorldBoxOpenMods</PackageProjectUrl>
-        <RepositoryUrl>https://github.com/WorldBoxOpenMods/ModLoader</RepositoryUrl>
-        <RepositoryType>Git</RepositoryType>
-        <AssemblyVersion>2.0</AssemblyVersion>
+        <Authors>WBML contributors (built upon NeoModLoader by WorldBoxOpenMods)</Authors>
+        <AssemblyVersion>0.1.0</AssemblyVersion>
         <DebugType>portable</DebugType>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-        <AssemblyName>NeoModLoader_mobile</AssemblyName>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-        <SignAssembly>true</SignAssembly>
-        <AssemblyOriginatorKeyFile>wbopenmods.snk</AssemblyOriginatorKeyFile>
+        <AssemblyName>WBML</AssemblyName>
+        <RootNamespace>WBML</RootNamespace>
+        <Version>0.1.0</Version>
     </PropertyGroup>
 
   <!-- Used for HarmonyPatch, Authentication, Auto-update, Hotfix, Steam workshop-->

@@ -1,3 +1,4 @@
+using WBML;
 using System.Reflection;
 using NeoModLoader.constants;
 using UnityEngine;
@@ -9,7 +10,6 @@ internal static class InternalResourcesGetter
     private static Sprite mod_icon;
     private static Sprite icon_frame;
     private static Sprite icon_reload;
-    private static Sprite github_icon;
     private static Sprite window_empty_frame;
     private static Sprite window_big_close;
     private static Sprite window_vert_name_plate;
@@ -17,7 +17,7 @@ internal static class InternalResourcesGetter
     private static long   last_write_time;
 
     public static readonly string Resource =
-        Config.isAndroid ? "NeoModLoader_mobile.resources" : "NeoModLoader.resources";
+        Branding.ResourceRoot;
     private static Texture2D LoadManifestTexture(string path_under_resources)
     {
         var s = Assembly.GetExecutingAssembly()
@@ -68,10 +68,10 @@ internal static class InternalResourcesGetter
     public static Sprite GetIcon()
     {
         if (mod_icon != null) return mod_icon;
-        SpriteTextureLoader.addSprite("ui/icons/neomodloader", LoadManifestBytes("logo.png"));
-        mod_icon = SpriteTextureLoader.getSprite("ui/icons/neomodloader");
-        mod_icon.name = "NeoModLoader";
-        ResourcesPatch.PatchResource("ui/icons/neomodloader", mod_icon);
+        SpriteTextureLoader.addSprite(Branding.LogoSpritePath, LoadManifestBytes(Branding.LogoResource));
+        mod_icon = SpriteTextureLoader.getSprite(Branding.LogoSpritePath);
+        mod_icon.name = Branding.Name;
+        ResourcesPatch.PatchResource(Branding.LogoSpritePath, mod_icon);
         return mod_icon;
     }
 
@@ -86,15 +86,6 @@ internal static class InternalResourcesGetter
         return icon_frame;
     }
 
-    public static Sprite GetGitHubIcon()
-    {
-        if (github_icon != null) return github_icon;
-        SpriteTextureLoader.addSprite("ui/icons/iconGithub", LoadManifestBytes("github.png"));
-        github_icon = SpriteTextureLoader.getSprite("ui/icons/iconGithub");
-        github_icon.name = "iconGithub";
-
-        return github_icon;
-    }
 
     public static Sprite GetReloadIcon()
     {

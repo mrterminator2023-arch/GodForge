@@ -1,5 +1,6 @@
 //#define TEST
 
+using WBML;
 using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 
@@ -160,11 +161,11 @@ public static class LogService
     {
         if (Others.unity_player_enabled)
         {
-            AndroidHelper.LogError("[NML]: " + message);
+            AndroidHelper.LogError("[" + Branding.ShortName + "]: " + message);
         }
         else
         {
-            System.Console.Error.WriteLine("[NML]: " + message);
+            System.Console.Error.WriteLine("[" + Branding.ShortName + "]: " + message);
         }
     }
     /// <summary>
@@ -175,11 +176,11 @@ public static class LogService
     {
         if (Others.unity_player_enabled)
         {
-            AndroidHelper.LogWarning("[NML]: " + message);
+            AndroidHelper.LogWarning("[" + Branding.ShortName + "]: " + message);
         }
         else
         {
-            System.Console.WriteLine("[NML]: " + message);
+            System.Console.WriteLine("[" + Branding.ShortName + "]: " + message);
         }
     }
     /// <summary>
@@ -190,11 +191,11 @@ public static class LogService
     {
         if (Others.unity_player_enabled)
         {
-            AndroidHelper.Log("[NML]: " + message);
+            AndroidHelper.Log("[" + Branding.ShortName + "]: " + message);
         }
         else
         {
-            System.Console.WriteLine("[NML]: " + message);
+            System.Console.WriteLine("[" + Branding.ShortName + "]: " + message);
         }
     }
     /// <summary>

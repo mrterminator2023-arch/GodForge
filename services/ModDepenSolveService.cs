@@ -1,3 +1,4 @@
+using WBML;
 using NeoModLoader.api;
 using NeoModLoader.utils;
 
