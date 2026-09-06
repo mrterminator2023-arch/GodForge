@@ -16,3 +16,8 @@ resources/commit
 App.config
 constants/Setting.cs
 *.sln
+examples/HelloMod/*.dll
+examples/HelloMod/*.pdb
+bin/
+obj/
+out/
