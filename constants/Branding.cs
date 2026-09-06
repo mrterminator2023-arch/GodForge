@@ -32,4 +32,22 @@ public static class Branding
         "WBML is built upon NeoModLoader / AndroidModLoader by WorldBoxOpenMods (MIT). " +
         "We learned a great deal from their code and are grateful to its authors.\n\n" +
         "See CREDITS.md and LICENSE-NeoModLoader shipped with WBML.";
+
+    /// <summary>Decoration: small translucent logos drifting on the mods window background. Set false to disable.</summary>
+    public const bool FloatingLogos = true;
+
+    /// <summary>Number of drifting logos</summary>
+    public const int FloatingLogoCount = 8;
+
+    /// <summary>Logo size in UI units</summary>
+    public const float FloatingLogoSize = 14f;
+
+    /// <summary>Logo opacity (0..1)</summary>
+    public const float FloatingLogoAlpha = 0.28f;
+
+    /// <summary>Drift speed range, UI units per second</summary>
+    public const float FloatingLogoSpeedMin = 8f;
+
+    /// <summary>Drift speed range, UI units per second</summary>
+    public const float FloatingLogoSpeedMax = 20f;
 }

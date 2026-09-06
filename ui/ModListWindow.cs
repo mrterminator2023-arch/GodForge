@@ -43,12 +43,21 @@ public class ModListWindow : AbstractListWindow<ModListWindow, IMod>
     /// <inheritdoc cref="AbstractListWindow{T,TItem}.Init" />
     protected override void Init()
     {
+        // Window background size (fallback to the known "windows/empty" size if layout is not ready yet)
+        Rect bg_rect = BackgroundTransform.GetComponent<RectTransform>().rect;
+        float bg_w = bg_rect.width > 50 ? bg_rect.width : 250f;
+        float bg_h = bg_rect.height > 50 ? bg_rect.height : 330f;
+
+        // Decoration: drifting logos behind the list
+        FloatingLogos.Attach(BackgroundTransform, bg_w - 10, bg_h - 10);
+
+        // About: small button at the bottom edge of the window, toggles an inline credits panel above it
         GameObject modloaderButton =
             CreateGameObject("ModLoaderButton", typeof(Image), typeof(Button), typeof(TipButton));
         modloaderButton.transform.SetParent(BackgroundTransform);
-        modloaderButton.transform.localPosition = new(-125, 0);
+        modloaderButton.transform.localPosition = new(0, -bg_h * 0.5f + 12);
         modloaderButton.transform.localScale = Vector3.one;
-        modloaderButton.GetComponent<RectTransform>().sizeDelta = new(20, 20);
+        modloaderButton.GetComponent<RectTransform>().sizeDelta = new(18, 18);
         Image modloaderButtonImage = modloaderButton.GetComponent<Image>();
         modloaderButtonImage.sprite = InternalResourcesGetter.GetIcon();
         TipButton modloaderButtonTipButton = modloaderButton.GetComponent<TipButton>();
@@ -57,8 +66,32 @@ public class ModListWindow : AbstractListWindow<ModListWindow, IMod>
             LM.Add(lang, "WBMLCommit", $"commit\n{InternalResourcesGetter.GetCommit()}");
         modloaderButtonTipButton.text_description_2 = "WBMLCommit";
         modloaderButtonTipButton.textOnClickDescription = "WBML About";
+
+        GameObject about_panel = CreateGameObject("AboutPanel", typeof(Image));
+        about_panel.transform.SetParent(BackgroundTransform);
+        about_panel.transform.localPosition = new(0, -bg_h * 0.5f + 12 + 9 + 45);
+        about_panel.transform.localScale = Vector3.one;
+        about_panel.GetComponent<RectTransform>().sizeDelta = new(bg_w - 30, 86);
+        Image about_bg = about_panel.GetComponent<Image>();
+        about_bg.sprite = Resources.Load<Sprite>("ui/special/windowInnerSliced");
+        about_bg.type = Image.Type.Sliced;
+
+        GameObject about_text_obj = CreateGameObject("Text", typeof(Text));
+        about_text_obj.transform.SetParent(about_panel.transform);
+        about_text_obj.transform.localPosition = Vector3.zero;
+        about_text_obj.transform.localScale = Vector3.one;
+        about_text_obj.GetComponent<RectTransform>().sizeDelta = new(bg_w - 42, 78);
+        Text about_text = about_text_obj.GetComponent<Text>();
+        OT.InitializeCommonText(about_text);
+        about_text.resizeTextForBestFit = true;
+        about_text.resizeTextMinSize = 5;
+        about_text.resizeTextMaxSize = 9;
+        about_text.alignment = TextAnchor.MiddleCenter;
+        about_text.text = Branding.AboutText;
+        about_panel.SetActive(false);
+
         Button modloaderButtonButton = modloaderButton.GetComponent<Button>();
-        modloaderButtonButton.onClick.AddListener(() => { InformationWindow.ShowWindow(Branding.AboutText); });
+        modloaderButtonButton.onClick.AddListener(() => { about_panel.SetActive(!about_panel.activeSelf); });
     }
 
     /// <inheritdoc cref="AbstractListWindow{T,TItem}.OnNormalEnable" />
