@@ -80,6 +80,7 @@ public static class ResourcesPatch
                     if (sprite == null) continue;
                     string name = sprite.name.Replace("(Clone)", "");
                     if (!wanted.Contains(name)) continue;
+                    if (sprite.texture == null) continue; // unloaded/atlas-only sprite would render white
                     if (tree.direct_objects.ContainsKey($"ui/special/{name}".ToLower())) continue;
                     tree.Add($"ui/special/{name}", sprite);
                 }
@@ -328,12 +329,13 @@ public static class ResourcesPatch
                 return o;
             }
 
-            var node = Find(path, true, false);
+            // Do not create nodes for arbitrary game paths (every Resources.Load goes through here)
+            var node = Find(path, false, false);
 
             if (node == null) return null;
             if (node.objects.TryGetValue(Path.GetFileNameWithoutExtension(path.ToLower()), out o))
             {
-                direct_objects[path] = o;
+                direct_objects[path.ToLower()] = o;
                 return o;
             }
 
