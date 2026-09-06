@@ -19,6 +19,7 @@ internal static class PcModRewriter
 {
     private static readonly Regex ConvertFromTo = new(@"from '([^']+)' to '([^']+)'", RegexOptions.Compiled);
     private static readonly Regex ToType = new(@"to type '([^']+)'", RegexOptions.Compiled);
+    private static readonly Regex NonDelegateType = new(@"non-delegate type '([^']+)'", RegexOptions.Compiled);
     private static readonly Regex ConvertTypeToType = new(@"type '([^']+)' to '([^']+)'", RegexOptions.Compiled);
 
     /// <summary>
@@ -74,17 +75,64 @@ internal static class PcModRewriter
     /// </summary>
     private static string ParameterTypeOf(SyntaxNode pExpression, Compilation pCompilation)
     {
+        return ParameterSymbolOf(pExpression, pCompilation)?.ToDisplayString();
+    }
+
+    /// <summary>
+    ///     Last resort: the compiler names the delegate type in its message ("to non-delegate type 'UnityAction'");
+    ///     look that name up where the error is, which is exactly the scope the mod's own code sees.
+    /// </summary>
+    private static ITypeSymbol TypeNamedInMessage(string pMessage, SyntaxNode pExpression, Compilation pCompilation)
+    {
+        Match match = NonDelegateType.Match(pMessage);
+        if (!match.Success) return null;
+
+        SemanticModel model = pCompilation.GetSemanticModel(pExpression.SyntaxTree);
+        return model.LookupNamespacesAndTypes(pExpression.SpanStart, name: match.Groups[1].Value)
+                    .OfType<ITypeSymbol>()
+                    .FirstOrDefault(t => t.GetMembers("Invoke").OfType<IMethodSymbol>().Any());
+    }
+
+    private static ITypeSymbol ParameterSymbolOf(SyntaxNode pExpression, Compilation pCompilation)
+    {
+        SemanticModel model = pCompilation.GetSemanticModel(pExpression.SyntaxTree);
+
+        // Works for every position, not just call arguments: property bodies, assignments, initializers.
+        if (pExpression is ExpressionSyntax expression_syntax)
+        {
+            // Il2Cpp delegates are generated as classes deriving from MulticastDelegate, so TypeKind is Class,
+            // not Delegate; having an Invoke member is what identifies them.
+            ITypeSymbol converted = model.GetTypeInfo(expression_syntax).ConvertedType;
+            if (converted != null && converted.GetMembers("Invoke").OfType<IMethodSymbol>().Any()) return converted;
+        }
+
         if (pExpression.Parent is not ArgumentSyntax argument ||
             argument.Parent is not ArgumentListSyntax arguments) return null;
 
-        SemanticModel model = pCompilation.GetSemanticModel(pExpression.SyntaxTree);
         SymbolInfo info = model.GetSymbolInfo(arguments.Parent!);
         var method = (info.Symbol ?? info.CandidateSymbols.FirstOrDefault()) as IMethodSymbol;
         if (method == null) return null;
 
         int index = arguments.Arguments.IndexOf(argument);
         if (index < 0 || index >= method.Parameters.Length) return null;
-        return method.Parameters[index].Type.ToDisplayString();
+        return method.Parameters[index].Type;
+    }
+
+    /// <summary>
+    ///     The managed delegate matching an Il2Cpp one, so a method group or lambda can be cast before it is
+    ///     handed to the game (Il2Cpp delegates cannot be built from either directly).
+    /// </summary>
+    private static string ManagedDelegateFor(ITypeSymbol pIl2CppDelegate)
+    {
+        var invoke = pIl2CppDelegate?.GetMembers("Invoke").OfType<IMethodSymbol>().FirstOrDefault();
+        if (invoke == null) return null;
+
+        var parameters = invoke.Parameters.Select(p => p.Type.ToDisplayString()).ToList();
+        if (invoke.ReturnsVoid)
+            return parameters.Count == 0 ? "System.Action" : $"System.Action<{string.Join(", ", parameters)}>";
+
+        parameters.Add(invoke.ReturnType.ToDisplayString());
+        return $"System.Func<{string.Join(", ", parameters)}>";
     }
 
     /// <summary>True when the called method has an overload taking an Il2Cpp array in this argument position.</summary>
@@ -127,9 +175,20 @@ internal static class PcModRewriter
         switch (pDiagnostic.Id)
         {
             // Lambda passed where the game expects an Il2Cpp delegate.
+            // A method group or a lambda whose delegate type the compiler cannot infer: both are being passed
+            // where the game wants an Il2Cpp delegate.
+            case "CS0428":
+            case "CS8917":
             case "CS1660":
             case "CS1661":
             {
+                ITypeSymbol parameter = ParameterSymbolOf(expression, pCompilation)
+                                        ?? TypeNamedInMessage(message, expression, pCompilation);
+                string managed = ManagedDelegateFor(parameter);
+                if (parameter != null && managed != null)
+                    return (span, $"NeoModLoader.AndroidCompatibilityModule.IL2CPPHelper.C<{parameter.ToDisplayString()}>" +
+                                  $"(({managed})({original}))");
+
                 Match match = ToType.Match(message);
                 if (!match.Success) return null;
                 string target = ParameterTypeOf(expression, pCompilation) ?? match.Groups[1].Value;
