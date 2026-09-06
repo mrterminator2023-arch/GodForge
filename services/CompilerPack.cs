@@ -37,9 +37,10 @@ public static class CompilerPack
             _resolver_hooked = true;
         }
 
-        foreach (var dll in Directory.GetFiles(Paths.CompilerPackPath, "*.dll"))
+        // Only Roslyn itself is loaded eagerly; its dependencies (System.* facades, already in the net8 TPA on
+        // CoreCLR) are resolved on demand by ResolveFromPack if ever missing.
+        foreach (var dll in Directory.GetFiles(Paths.CompilerPackPath, "Microsoft.CodeAnalysis*.dll"))
         {
-            if (Path.GetFileName(dll).StartsWith("Assembly-CSharp-Publicized")) continue;
             try
             {
                 var asm = Assembly.LoadFrom(dll);

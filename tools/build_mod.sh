@@ -10,7 +10,7 @@ DOTNET=${DOTNET:-$HOME/.dotnet/dotnet}
 [ -x "$DOTNET" ] || DOTNET=dotnet
 IL2CPP_DIR=${2:-${IL2CPP_DIR:-}}
 if [ -z "$IL2CPP_DIR" ]; then
-  for d in /tmp/il2cppasm_fixed "$HOME"/IDK/wbandroid/backup/*/com.mkarpenko.worldbox/MelonLoader/Il2CppAssemblies; do
+  for d in "$HOME"/IDK/wbandroid/refs/Il2CppAssemblies_0.51.4 /tmp/il2cppasm_fixed "$HOME"/IDK/wbandroid/backup/*/com.mkarpenko.worldbox/MelonLoader/Il2CppAssemblies; do
     [ -f "$d/Assembly-CSharp.dll" ] && { IL2CPP_DIR=$d; break; }
   done
 fi

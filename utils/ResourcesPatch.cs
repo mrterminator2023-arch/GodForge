@@ -21,7 +21,7 @@ public static class ResourcesPatch
     /// </summary>
     public static readonly string[] UiSpriteWhitelist =
     {
-        "windowInnerSliced", "button2", "special_buttonred", "special_buttonRed", "special_buttonGray",
+        "windowInnerSliced", "button2", "special_buttonRed", "special_buttonGray",
         "windowEmptyFrame", "darkInputFieldEmpty", "inputFieldIcon"
     };
 
@@ -80,7 +80,7 @@ public static class ResourcesPatch
                     if (sprite == null) continue;
                     string name = sprite.name.Replace("(Clone)", "");
                     if (!wanted.Contains(name)) continue;
-                    if (tree.direct_objects.ContainsKey($"ui/special/{name}")) continue;
+                    if (tree.direct_objects.ContainsKey($"ui/special/{name}".ToLower())) continue;
                     tree.Add($"ui/special/{name}", sprite);
                 }
             }
