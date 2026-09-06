@@ -33,7 +33,7 @@ namespace NCMS.Utils
             Transform parent = null, UnityAction call = null)
         {
             LM.AddToCurrentLocale(name, title);
-            LM.AddToCurrentLocale(name + " Description", description);
+            LM.AddToCurrentLocale(name + " description", description); // lowercase key is what the game looks up (upstream PR #49)
             LM.ApplyLocale(false);
             PowerButton asPowerButton;
             switch (type)

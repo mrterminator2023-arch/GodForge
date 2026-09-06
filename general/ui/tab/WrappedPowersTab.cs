@@ -28,6 +28,13 @@ internal class WrappedPowersTab
     {
         Tab = pPowersTab;
 
+        // A tab can be missing when the game changes its UI hierarchy; stay inert instead of throwing. Upstream PR #72.
+        if (Tab == null)
+        {
+            Modifiable = false;
+            return;
+        }
+
         Modifiable = !PowerTabNames.GetNames().Contains(Tab.name);
 
         ButtonGroups = new();

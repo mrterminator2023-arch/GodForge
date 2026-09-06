@@ -289,7 +289,17 @@ public static class PowerButtonCreator
         Transform tabTransform = CanvasMain.instance.canvas_ui.transform.Find(
             $"CanvasBottom/BottomElements/BottomElementsMover/CanvasScrollView/Scroll View/Viewport/Content/Power Tabs/{pId}");
 
-        return tabTransform == null ? null : tabTransform.GetComponent<PowersTab>();
+        PowersTab tab = tabTransform == null ? null : tabTransform.GetComponent<PowersTab>();
+        if (tab != null) return tab;
+
+        // The hierarchy path above breaks whenever the game moves the bottom bar around (it did in 0.51.x),
+        // so fall back to a name lookup over every loaded tab. Upstream PR #72.
+        foreach (PowersTab loaded in Resources.FindObjectsOfTypeAll<PowersTab>())
+        {
+            if (loaded != null && loaded.name == pId) return loaded;
+        }
+
+        return null;
     }
 
     /// <summary>
