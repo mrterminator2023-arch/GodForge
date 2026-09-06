@@ -331,6 +331,8 @@ internal static class ModInfoUtils
 
     public static bool isModDisabled(string pModUID)
     {
+        // In safe mode nothing is loaded, so a crashing mod cannot keep the game from starting again.
+        if (CrashGuard.SafeMode) return true;
         return mod_compilation_caches.TryGetValue(pModUID, out ModCompilationCache cache) && cache.disabled;
     }
 

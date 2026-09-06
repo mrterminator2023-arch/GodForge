@@ -95,6 +95,8 @@ public class WorldBoxMod : BaseBehaviour
     private void Update()
     {
         if (!Config.game_loaded) return;
+        // A session that reaches gameplay and keeps running is a healthy one; that clears the crash record.
+        CrashGuard.Tick(UnityEngine.Time.unscaledDeltaTime);
         if (initialized_successfully)
         {
             TabManager._checkNewTabs();
@@ -125,6 +127,8 @@ public class WorldBoxMod : BaseBehaviour
         List<ModDependencyNode> mod_nodes = new();
         SmoothLoaderHelper.add(() =>
         {
+            // Records this modded launch; two launches that never reached gameplay mean mods are crashing it.
+            CrashGuard.BeginSession();
             ModInfoUtils.findAndPrepareMods();
             ModDepenSolveService.InitializeGraph(AllRecognizedMods.Keys);
             startup_enable_plan = ModDepenSolveService.BuildStartupEnablePlan();
