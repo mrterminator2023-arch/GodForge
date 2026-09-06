@@ -1,0 +1,23 @@
+{
+  "WBMLModList Title": "Моды",
+  "NMLMenu Title": "Моды",
+  "ModCommunity Title": "Сообщество мода",
+  "ModConfigure Title": "Настройки мода",
+  "OpenFolder Title": "Открыть папку мода",
+  "ToggleMod Title": "Вкл/выкл мод",
+  "WBML About": "О WBML\nНажми, чтобы показать благодарности",
+  "mod_state_enabled": "Сейчас <color=green>включён</color>",
+  "mod_state_disabled": "Сейчас <color=gray>выключен</color>",
+  "mod_state_failed": "Сейчас <color=red>ошибка</color>",
+  "mod_next_state_enabled": "загрузится",
+  "mod_next_state_disabled": "не загрузится",
+  "WBML_ModsList": "Моды",
+  "WBML_ModsList Description": "Здесь твои моды.\nМожно включать, выключать и настраивать.",
+  "wbml_no_mods_title": "Модов пока нет",
+  "wbml_no_mods_hint": "Положи папки модов сюда:",
+  "wbml_state_enabled": "Включён",
+  "wbml_state_disabled": "Выключен",
+  "wbml_state_failed": "Ошибка",
+  "wbml_pending_on": "Вкл. после перезапуска",
+  "wbml_pending_off": "Выкл. после перезапуска"
+}

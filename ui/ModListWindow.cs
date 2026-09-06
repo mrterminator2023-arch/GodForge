@@ -1,7 +1,5 @@
 using WBML;
-using System.Collections;
 
-using static NeoModLoader.AndroidCompatibilityModule.IL2CPPHelper;
 using static NeoModLoader.AndroidCompatibilityModule.IL2CPPHelper;
 using NeoModLoader.api;
 using NeoModLoader.constants;
@@ -9,21 +7,23 @@ using NeoModLoader.General;
 using NeoModLoader.services;
 using NeoModLoader.utils;
 using UnityEngine;
-using UnityEngine.Events;
 using UnityEngine.UI;
 
 namespace NeoModLoader.ui;
 
 /// <summary>
-///     List window of all mods recognized by NeoModLoader.
+///     List window of all mods recognized by WBML.
+///     Own look: dark rounded cards with a coloured state strip, animated toggle switch, sticky header with counters,
+///     friendly empty state and a compact About pill. Everything is drawn with <see cref="UiSkin"/> sprites.
 /// </summary>
 public class ModListWindow : AbstractListWindow<ModListWindow, IMod>
 {
     private readonly Queue<IMod> to_add = new();
-    private ModDeclare clickedMod;
-    private int clickTimes;
-    private float lastClickTime;
     private bool needRefresh;
+
+    private Text _header_counts;
+    private GameObject _empty_state;
+    private Text _empty_hint;
 
     private void Update()
     {
@@ -51,48 +51,89 @@ public class ModListWindow : AbstractListWindow<ModListWindow, IMod>
         // Decoration: drifting logos behind the list
         FloatingLogos.Attach(BackgroundTransform, bg_w - 10, bg_h - 10);
 
-        // About: small button at the bottom edge of the window, toggles an inline credits panel above it
-        GameObject modloaderButton =
-            CreateGameObject("ModLoaderButton", typeof(Image), typeof(Button), typeof(TipButton));
-        modloaderButton.transform.SetParent(BackgroundTransform);
-        modloaderButton.transform.localPosition = new(0, -bg_h * 0.5f + 12);
-        modloaderButton.transform.localScale = Vector3.one;
-        modloaderButton.GetComponent<RectTransform>().sizeDelta = new(18, 18);
-        Image modloaderButtonImage = modloaderButton.GetComponent<Image>();
-        modloaderButtonImage.sprite = InternalResourcesGetter.GetIcon();
-        TipButton modloaderButtonTipButton = modloaderButton.GetComponent<TipButton>();
-        modloaderButtonTipButton.textOnClick = Branding.Name + " v" + Branding.Version;
+        // Leave room under the sticky header
+        VerticalLayoutGroup layout = ContentTransform.GetComponent<VerticalLayoutGroup>();
+        layout.spacing = 6;
+        layout.padding = new RectOffset(30, 30, 28, 14);
+
+        BuildHeader();
+        BuildEmptyState();
+        BuildAbout(bg_w, bg_h);
+    }
+
+    // ---- static chrome -------------------------------------------------------------------------------------
+
+    private void BuildHeader()
+    {
+        // Scroll View top edge is at y = -6 + 135 = 129 (see AbstractListWindow.CreateAndInit)
+        Image bar = UiSkin.Rect("Header", BackgroundTransform, 5, UiSkin.PanelBg, new Vector2(0, 120),
+            new Vector2(204, 17));
+        bar.transform.SetAsLastSibling();
+
+        UiSkin.Img("Logo", bar.transform, InternalResourcesGetter.GetIcon(), Color.white, new Vector2(-93, 0),
+            new Vector2(11, 11));
+        UiSkin.Txt("Title", bar.transform, $"<b>{Branding.Name}</b>", 7, UiSkin.TextPrimary, new Vector2(-45, 0),
+            new Vector2(80, 14));
+        _header_counts = UiSkin.Txt("Counts", bar.transform, "", 6, UiSkin.TextSecondary, new Vector2(45, 0),
+            new Vector2(100, 14), TextAnchor.MiddleRight);
+    }
+
+    private void BuildEmptyState()
+    {
+        _empty_state = CreateGameObject("EmptyState", typeof(RectTransform));
+        _empty_state.transform.SetParent(BackgroundTransform);
+        _empty_state.transform.localPosition = new Vector3(0, 0);
+        _empty_state.transform.localScale = Vector3.one;
+        _empty_state.GetComponent<RectTransform>().sizeDelta = new Vector2(200, 120);
+
+        UiSkin.Img("BigLogo", _empty_state.transform, InternalResourcesGetter.GetIcon(),
+            new Color(1f, 1f, 1f, 0.35f), new Vector2(0, 30), new Vector2(48, 48));
+        UiSkin.Txt("Title", _empty_state.transform, LM.Get("wbml_no_mods_title"), 8, UiSkin.TextPrimary,
+            new Vector2(0, -6), new Vector2(190, 14), TextAnchor.MiddleCenter);
+        _empty_hint = UiSkin.Txt("Hint", _empty_state.transform, "", 5, UiSkin.TextDim, new Vector2(0, -30),
+            new Vector2(180, 30), TextAnchor.UpperCenter, true);
+        _empty_state.SetActive(false);
+    }
+
+    private void BuildAbout(float bg_w, float bg_h)
+    {
+        float y = -bg_h * 0.5f + 12;
+
+        // pill button "WBML v0.1.0"
+        Image pill = UiSkin.Rect("ModLoaderButton", BackgroundTransform, 6, UiSkin.A(UiSkin.Accent, 0.22f),
+            new Vector2(0, y), new Vector2(78, 12), true, typeof(Button), typeof(TipButton));
+        pill.transform.SetAsLastSibling();
+        UiSkin.Img("Logo", pill.transform, InternalResourcesGetter.GetIcon(), Color.white, new Vector2(-31, 0),
+            new Vector2(8, 8));
+        UiSkin.Txt("Label", pill.transform, $"{Branding.Name} v{Branding.Version}  <color=#5aa9ff>i</color>", 5,
+            UiSkin.TextPrimary, new Vector2(5, 0), new Vector2(64, 12), TextAnchor.MiddleCenter);
+
+        TipButton tip = pill.GetComponent<TipButton>();
+        tip.textOnClick = Branding.Name + " v" + Branding.Version;
         foreach (var lang in LocalizedTextManager.getAllLanguages())
             LM.Add(lang, "WBMLCommit", $"commit\n{InternalResourcesGetter.GetCommit()}");
-        modloaderButtonTipButton.text_description_2 = "WBMLCommit";
-        modloaderButtonTipButton.textOnClickDescription = "WBML About";
+        tip.text_description_2 = "WBMLCommit";
+        tip.textOnClickDescription = "WBML About";
 
-        GameObject about_panel = CreateGameObject("AboutPanel", typeof(Image));
-        about_panel.transform.SetParent(BackgroundTransform);
-        about_panel.transform.localPosition = new(0, -bg_h * 0.5f + 12 + 9 + 45);
-        about_panel.transform.localScale = Vector3.one;
-        about_panel.GetComponent<RectTransform>().sizeDelta = new(bg_w - 30, 86);
-        Image about_bg = about_panel.GetComponent<Image>();
-        about_bg.sprite = Resources.Load<Sprite>("ui/special/windowInnerSliced");
-        about_bg.type = Image.Type.Sliced;
-
-        GameObject about_text_obj = CreateGameObject("Text", typeof(Text));
-        about_text_obj.transform.SetParent(about_panel.transform);
-        about_text_obj.transform.localPosition = Vector3.zero;
-        about_text_obj.transform.localScale = Vector3.one;
-        about_text_obj.GetComponent<RectTransform>().sizeDelta = new(bg_w - 42, 78);
-        Text about_text = about_text_obj.GetComponent<Text>();
-        OT.InitializeCommonText(about_text);
+        // credits card above the pill
+        Image about_panel = UiSkin.Rect("AboutPanel", BackgroundTransform, 7, UiSkin.PanelBg,
+            new Vector2(0, y + 6 + 52), new Vector2(bg_w - 30, 98), true);
+        about_panel.transform.SetAsLastSibling();
+        UiSkin.Rect("Stripe", about_panel.transform, 2, UiSkin.Accent, new Vector2(0, 45), new Vector2(bg_w - 60, 2));
+        Text about_text = UiSkin.Txt("Text", about_panel.transform, Branding.AboutText, 6, UiSkin.TextSecondary,
+            new Vector2(0, -3), new Vector2(bg_w - 46, 86), TextAnchor.MiddleCenter, true);
         about_text.resizeTextForBestFit = true;
-        about_text.resizeTextMinSize = 5;
-        about_text.resizeTextMaxSize = 9;
-        about_text.alignment = TextAnchor.MiddleCenter;
-        about_text.text = Branding.AboutText;
-        about_panel.SetActive(false);
+        about_text.resizeTextMinSize = 4;
+        about_text.resizeTextMaxSize = 6;
+        about_panel.gameObject.SetActive(false);
 
-        Button modloaderButtonButton = modloaderButton.GetComponent<Button>();
-        modloaderButtonButton.onClick.AddListener(() => { about_panel.SetActive(!about_panel.activeSelf); });
+        pill.GetComponent<Button>().onClick.AddListener(() =>
+        {
+            about_panel.gameObject.SetActive(!about_panel.gameObject.activeSelf);
+        });
     }
+
+    // ---- data ----------------------------------------------------------------------------------------------
 
     /// <inheritdoc cref="AbstractListWindow{T,TItem}.OnNormalEnable" />
     public override void OnNormalEnable()
@@ -111,269 +152,341 @@ public class ModListWindow : AbstractListWindow<ModListWindow, IMod>
             virtual_mod.OnLoad(mod, null);
             to_add.Enqueue(virtual_mod);
         }
+
+        RefreshHeader();
     }
+
+    /// <summary>Recount states for the header and toggle the empty state.</summary>
+    internal void RefreshHeader()
+    {
+        int enabled = 0, disabled = 0, failed = 0;
+        foreach (var state in WorldBoxMod.AllRecognizedMods.Values)
+        {
+            switch (state)
+            {
+                case ModState.LOADED: enabled++; break;
+                case ModState.DISABLED: disabled++; break;
+                case ModState.FAILED: failed++; break;
+            }
+        }
+
+        int total = enabled + disabled + failed;
+        if (_header_counts != null)
+        {
+            string s = UiSkin.Col("●", UiSkin.Green) + enabled + "   " + UiSkin.Col("●", UiSkin.Gray) + disabled;
+            if (failed > 0) s += "   " + UiSkin.Col("●", UiSkin.Red) + failed;
+            _header_counts.text = s;
+        }
+
+        if (_empty_state != null)
+        {
+            _empty_state.SetActive(total == 0);
+            if (total == 0 && _empty_hint != null)
+                _empty_hint.text = LM.Get("wbml_no_mods_hint") + "\n" + UiSkin.Col(Paths.ModsPath, UiSkin.Accent);
+        }
+    }
+
+    // ---- item prefab ---------------------------------------------------------------------------------------
+
+    private const float CardW = 200f;
+    private const float CardH = 60f;
+    private const float ButtonX = 90f;
+    private const float ButtonD = 17f;
 
     /// <inheritdoc cref="AbstractListWindow{T,TItem}.CreateItemPrefab" />
     protected override AbstractListWindowItem<IMod> CreateItemPrefab()
     {
-        GameObject obj = CreateGameObject("ModListItemPrefab", typeof(Image), typeof(ModListItem));
+        GameObject obj = CreateGameObject("ModListItemPrefab", typeof(Image), typeof(CanvasGroup), typeof(ModListItem));
         obj.SetActive(false);
-
         obj.transform.SetParent(WorldBoxMod.Transform);
-
-        obj.GetComponent<RectTransform>().sizeDelta = new(0, 50);
+        obj.GetComponent<RectTransform>().sizeDelta = new Vector2(0, CardH);
         Image bg = obj.GetComponent<Image>();
-        bg.sprite = Resources.Load<Sprite>("ui/special/windowInnerSliced");
+        bg.sprite = UiSkin.Rounded(7);
         bg.type = Image.Type.Sliced;
+        bg.color = UiSkin.CardBg;
+        bg.raycastTarget = false;
 
-        GameObject icon = CreateGameObject("Icon", typeof(Image), typeof(Button), typeof(TipButton));
-        icon.transform.SetParent(obj.transform);
-        icon.transform.localPosition = new(-75, 0);
-        icon.transform.localScale = Vector3.one;
-        icon.GetComponent<RectTransform>().sizeDelta = new(40, 40);
-        icon.GetComponent<TipButton>().type = "normal";
-        Image iconImage = icon.GetComponent<Image>();
-        iconImage.sprite = InternalResourcesGetter.GetIcon();
+        // coloured state strip on the left
+        UiSkin.Rect("Accent", obj.transform, 2, UiSkin.Green, new Vector2(-96, 0), new Vector2(3, CardH - 16));
 
-        GameObject iconFrame = CreateGameObject("IconFrame", typeof(Image));
-        iconFrame.transform.SetParent(icon.transform);
-        iconFrame.transform.localPosition = Vector3.zero;
-        iconFrame.transform.localScale = Vector3.one;
-        iconFrame.GetComponent<RectTransform>().sizeDelta =
-            icon.GetComponent<RectTransform>().sizeDelta + new Vector2(5, 5);
-        Image iconFrameImage = iconFrame.GetComponent<Image>();
-        iconFrameImage.sprite = InternalResourcesGetter.GetIconFrame();
-        iconFrameImage.type = Image.Type.Sliced;
+        // icon in a tinted rounded frame
+        Image frame = UiSkin.Rect("IconFrame", obj.transform, 6, UiSkin.A(UiSkin.Green, 0.30f), new Vector2(-76, 0),
+            new Vector2(40, 40));
+        UiSkin.Img("Icon", frame.transform, InternalResourcesGetter.GetIcon(), Color.white, Vector2.zero,
+            new Vector2(32, 32));
 
-        GameObject text = CreateGameObject("Text", typeof(Text));
-        text.transform.SetParent(obj.transform);
-        text.transform.localPosition = new Vector3(2.5f, 0);
-        text.transform.localScale = Vector3.one;
-        text.GetComponent<RectTransform>().sizeDelta = new Vector2(105, 50);
-        Text textText = text.GetComponent<Text>();
-        textText.font = LocalizedTextManager.current_font;
-        textText.fontSize = 6;
-        textText.supportRichText = true;
+        // texts
+        UiSkin.Txt("Name", obj.transform, "", 7, UiSkin.TextPrimary, new Vector2(-8, 18), new Vector2(92, 12));
+        UiSkin.Txt("Author", obj.transform, "", 5, UiSkin.TextSecondary, new Vector2(-8, 8), new Vector2(92, 9));
+        UiSkin.Txt("Desc", obj.transform, "", 5, UiSkin.TextDim, new Vector2(-8, -4), new Vector2(92, 14),
+            TextAnchor.UpperLeft, true);
 
+        // status pill + type badge
+        Image status = UiSkin.Rect("Status", obj.transform, 4, UiSkin.A(UiSkin.Green, 0.22f), new Vector2(-18, -21),
+            new Vector2(72, 9));
+        UiSkin.Txt("Text", status.transform, "", 5, UiSkin.Green, Vector2.zero, new Vector2(72, 9),
+            TextAnchor.MiddleCenter);
+        Image badge = UiSkin.Rect("Badge", obj.transform, 4, UiSkin.A(UiSkin.Accent, 0.18f), new Vector2(30, -21),
+            new Vector2(22, 9));
+        UiSkin.Txt("Text", badge.transform, "DLL", 5, UiSkin.Accent, Vector2.zero, new Vector2(22, 9),
+            TextAnchor.MiddleCenter);
 
-        var state_text = CreateGameObject("StateText", typeof(Text));
-        state_text.transform.SetParent(obj.transform);
-        state_text.transform.localPosition = new Vector3(2.5f, -15.5f);
-        state_text.transform.localScale = Vector3.one;
-        state_text.GetComponent<RectTransform>().sizeDelta = new Vector2(105, 10);
-        var state_textText = state_text.GetComponent<Text>();
-        state_textText.font = LocalizedTextManager.current_font;
-        state_textText.fontSize = 6;
-        state_textText.supportRichText = true;
-        state_textText.alignment = TextAnchor.LowerLeft;
+        // toggle switch (track + knob), the whole track is the button
+        Image track = UiSkin.Rect("Toggle", obj.transform, 6, UiSkin.Green, new Vector2(64, 0), new Vector2(28, 13),
+            true, typeof(Button), typeof(TipButton));
+        track.GetComponent<TipButton>().type = "normal";
+        UiSkin.Img("Knob", track.transform, UiSkin.Circle(9), Color.white, new Vector2(7.5f, 0), new Vector2(9, 9));
 
-        Vector2 single_button_size = new(22, 22);
-        GameObject configure = CreateGameObject("Configure", typeof(Image), typeof(Button), typeof(TipButton));
-        configure.transform.SetParent(obj.transform);
-        configure.transform.localPosition = new(87, 12);
-        configure.transform.localScale = Vector3.one;
-        configure.GetComponent<RectTransform>().sizeDelta = single_button_size;
-        configure.GetComponent<TipButton>().textOnClick = "ModConfigure Title";
-        Image configureImageBG = configure.GetComponent<Image>();
-        configureImageBG.sprite = Resources.Load<Sprite>("ui/special/button2");
-        configureImageBG.type = Image.Type.Sliced;
-        GameObject configureIcon = CreateGameObject("Icon", typeof(Image));
-        configureIcon.transform.SetParent(configure.transform);
-        configureIcon.transform.localPosition = Vector3.zero;
-        configureIcon.transform.localScale = Vector3.one;
-        configureIcon.GetComponent<RectTransform>().sizeDelta = single_button_size * 0.875f;
-        Image configureIconImage = configureIcon.GetComponent<Image>();
-        configureIconImage.sprite = Resources.Load<Sprite>("ui/icons/iconoptions");
-
-        GameObject website = CreateGameObject("Website", typeof(Image), typeof(Button), typeof(TipButton));
-        website.transform.SetParent(obj.transform);
-        website.transform.localPosition = new(87, -12);
-        website.transform.localScale = Vector3.one;
-        website.GetComponent<RectTransform>().sizeDelta = single_button_size;
-        website.GetComponent<TipButton>().textOnClick = "ModCommunity Title";
-        Image websiteImageBG = website.GetComponent<Image>();
-        websiteImageBG.sprite = Resources.Load<Sprite>("ui/special/button2");
-        websiteImageBG.type = Image.Type.Sliced;
-        GameObject websiteIcon = CreateGameObject("Icon", typeof(Image));
-        websiteIcon.transform.SetParent(website.transform);
-        websiteIcon.transform.localPosition = Vector3.zero;
-        websiteIcon.transform.localScale = Vector3.one;
-        websiteIcon.GetComponent<RectTransform>().sizeDelta = single_button_size * 0.875f;
-        Image websiteIconImage = websiteIcon.GetComponent<Image>();
-        websiteIconImage.sprite = Resources.Load<Sprite>("ui/icons/actor_traits/iconcommunity");
-
-        GameObject reload = CreateGameObject("Reload", typeof(Image), typeof(Button), typeof(TipButton));
-        reload.transform.SetParent(obj.transform);
-        reload.transform.localPosition = new Vector3(64, -12);
-        reload.transform.localScale = Vector3.one;
-        reload.GetComponent<RectTransform>().sizeDelta = single_button_size * 0.9f;
-        reload.GetComponent<TipButton>().textOnClick = "ModReload Title";
-        Image reloadImageBG = reload.GetComponent<Image>();
-        reloadImageBG.sprite = Resources.Load<Sprite>("ui/special/special_buttonred");
-        reloadImageBG.type = Image.Type.Sliced;
-        GameObject reloadIcon = CreateGameObject("Icon", typeof(Image));
-        reloadIcon.transform.SetParent(reload.transform);
-        reloadIcon.transform.localPosition = Vector3.zero;
-        reloadIcon.transform.localScale = Vector3.one;
-        reloadIcon.GetComponent<RectTransform>().sizeDelta = single_button_size * 0.875f * 0.9f;
-        Image reloadIconImage = reloadIcon.GetComponent<Image>();
-        reloadIconImage.sprite = InternalResourcesGetter.GetReloadIcon();
-
-        GameObject open_folder = CreateGameObject("OpenFolder", typeof(Image), typeof(Button), typeof(TipButton));
-        open_folder.transform.SetParent(obj.transform);
-        open_folder.transform.localPosition = new Vector3(64, 11);
-        open_folder.transform.localScale = Vector3.one;
-        open_folder.GetComponent<RectTransform>().sizeDelta = single_button_size * 0.9f;
-        open_folder.GetComponent<TipButton>().textOnClick = "OpenFolder Title";
-        Image open_folderImageBG = open_folder.GetComponent<Image>();
-        open_folderImageBG.sprite = Resources.Load<Sprite>("ui/special/special_buttonred");
-        open_folderImageBG.type = Image.Type.Sliced;
-        GameObject open_folderIcon = CreateGameObject("Icon", typeof(Image));
-        open_folderIcon.transform.SetParent(open_folder.transform);
-        open_folderIcon.transform.localPosition = Vector3.zero;
-        open_folderIcon.transform.localScale = Vector3.one;
-        open_folderIcon.GetComponent<RectTransform>().sizeDelta = single_button_size * 0.875f * 0.9f;
-        Image open_folderIconImage = open_folderIcon.GetComponent<Image>();
-        open_folderIconImage.sprite = SpriteTextureLoader.getSprite("ui/icons/iconCustomWorld");
+        // small round action buttons
+        UiSkin.IconButton("Configure", obj.transform, Resources.Load<Sprite>("ui/icons/iconoptions"),
+            UiSkin.ButtonBg, UiSkin.TextPrimary, new Vector2(ButtonX, 20), ButtonD, "ModConfigure Title");
+        UiSkin.IconButton("OpenFolder", obj.transform, SpriteTextureLoader.getSprite("ui/icons/iconCustomWorld"),
+            UiSkin.ButtonBg, UiSkin.TextPrimary, new Vector2(ButtonX, 0), ButtonD, "OpenFolder Title");
+        UiSkin.IconButton("Website", obj.transform, Resources.Load<Sprite>("ui/icons/actor_traits/iconcommunity"),
+            UiSkin.ButtonBg, UiSkin.TextPrimary, new Vector2(ButtonX, -20), ButtonD, "ModCommunity Title");
 
         return obj.GetWrappedComponent<ModListItem>();
     }
 
     /// <summary>
-    ///     A single list item for <see cref="ModListWindow" />.
+    ///     A single card for <see cref="ModListWindow" />. Owns its little animations (appear, toggle knob, pulse).
     /// </summary>
     public class ModListItem : AbstractListWindowItem<IMod>
     {
         private IMod _mod;
+        private ModDeclare _declare;
+
+        private CanvasGroup _group;
+        private Image _bg, _accent, _frame, _icon, _track, _knob, _status_bg;
+        private Text _name, _author, _desc, _status, _badge;
+        private TipButton _toggle_tip;
+        private Button _configure, _folder, _website;
+        private IConfigurable _configurable;
+
+        private bool _wired;
+        private float _appear;          // 0..1 slide/fade in
+        private float _knob_x;          // current knob position
+        private float _knob_target;
+        private Color _track_color, _track_target;
+        private float _pop;             // icon pop timer
+        private bool _pulse;            // failed mods pulse their strip
+        private float _time;
+
+        private void Wire()
+        {
+            if (_wired) return;
+            _wired = true;
+            _group = gameObject.GetComponent<CanvasGroup>();
+            _bg = gameObject.GetComponent<Image>();
+            _accent = transform.Find("Accent").GetComponent<Image>();
+            _frame = transform.Find("IconFrame").GetComponent<Image>();
+            _icon = transform.Find("IconFrame/Icon").GetComponent<Image>();
+            _name = transform.Find("Name").GetComponent<Text>();
+            _author = transform.Find("Author").GetComponent<Text>();
+            _desc = transform.Find("Desc").GetComponent<Text>();
+            _status_bg = transform.Find("Status").GetComponent<Image>();
+            _status = transform.Find("Status/Text").GetComponent<Text>();
+            _badge = transform.Find("Badge/Text").GetComponent<Text>();
+            _track = transform.Find("Toggle").GetComponent<Image>();
+            _toggle_tip = _track.GetComponent<TipButton>();
+            _knob = transform.Find("Toggle/Knob").GetComponent<Image>();
+            _configure = transform.Find("Configure").GetComponent<Button>();
+            _folder = transform.Find("OpenFolder").GetComponent<Button>();
+            _website = transform.Find("Website").GetComponent<Button>();
+
+            _track.GetComponent<Button>().onClick.AddListener(OnToggle);
+            _configure.onClick.AddListener(() => ModConfigureWindow.ShowWindow(_configurable?.GetConfig()));
+            _folder.onClick.AddListener(() => { if (_declare != null) Application.OpenURL(_declare.FolderPath); });
+            _website.onClick.AddListener(() =>
+            {
+                string url = _mod?.GetUrl();
+                if (!string.IsNullOrEmpty(url)) Application.OpenURL(url);
+            });
+        }
+
         /// <inheritdoc cref="AbstractListWindowItem{TItem}.Setup" />
         /// <param name="mod">The mod to display</param>
         public override void Setup(IMod mod)
         {
+            Wire();
             _mod = mod;
-            ModDeclare mod_declare = mod.GetDeclaration();
-            ModState mod_state = WorldBoxMod.AllRecognizedMods[mod_declare];
+            _declare = mod.GetDeclaration();
 
-            Text text = transform.Find("Text").GetComponent<Text>();
-            var state_text = transform.Find("StateText").GetComponent<Text>();
-            string mod_name = mod_declare.Name;
-            string mod_author = mod_declare.Author;
-            string mod_desc = mod_declare.Description;
-            string multilang_mod_name_key = $"{mod_name}_{LocalizedTextManager.instance.language}";
-            string multilang_mod_author_key = $"{mod_author}_{LocalizedTextManager.instance.language}";
-            string multilang_mod_desc_key = $"{mod_desc}_{LocalizedTextManager.instance.language}";
+            string mod_name = _declare.GetDisplayName();
+            string mod_author = _declare.GetDisplayAuthor();
+            string mod_desc = _declare.GetDisplayDesc();
 
-            if (LocalizedTextManager.stringExists(multilang_mod_name_key))
+            string prefix = _declare.ModType == ModTypeEnum.BEPINEX ? "[BepInEx] " : "";
+            _name.text = $"<b>{prefix}{mod_name}</b>  <size=5>{UiSkin.Col("v" + _declare.Version, UiSkin.TextDim)}</size>";
+            _author.text = string.IsNullOrEmpty(mod_author) ? "" : "by " + mod_author;
+            _desc.text = mod_desc ?? "";
+
+            _badge.text = _declare.ModType switch
             {
-                mod_name = LM.Get(multilang_mod_name_key);
-            }
+                ModTypeEnum.COMPILED_NEOMOD => "DLL",
+                ModTypeEnum.NEOMOD => "SRC",
+                ModTypeEnum.RESOURCE_PACK => "PACK",
+                ModTypeEnum.BEPINEX => "BEPX",
+                _ => "MOD"
+            };
 
-            if (LocalizedTextManager.stringExists(multilang_mod_author_key))
-            {
-                mod_author = LM.Get(multilang_mod_author_key);
-            }
-
-            if (LocalizedTextManager.stringExists(multilang_mod_desc_key))
-            {
-                mod_desc = LM.Get(multilang_mod_desc_key);
-            }
-
-            switch (mod_declare.ModType)
-            {
-
-                case ModTypeEnum.NEOMOD:
-                case ModTypeEnum.COMPILED_NEOMOD:
-                case ModTypeEnum.RESOURCE_PACK:
-                    text.text = $"{mod_name}\t{mod_declare.Version}\n{mod_author}\n{mod_desc}";
-                    break;
-                case ModTypeEnum.BEPINEX:
-                    text.text = $"[BepInEx] {mod_name}\t{mod_declare.Version}\n{mod_author}\n{mod_desc}";
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-            
             Sprite sprite = null;
-            if (!string.IsNullOrEmpty(mod_declare.IconPath) &&
-                File.Exists(Path.Combine(mod_declare.FolderPath, mod_declare.IconPath)))
+            if (!string.IsNullOrEmpty(_declare.IconPath) &&
+                File.Exists(Path.Combine(_declare.FolderPath, _declare.IconPath)))
             {
-                sprite = SpriteLoadUtils.LoadSingleSprite(Path.Combine(mod_declare.FolderPath, mod_declare.IconPath));
+                sprite = SpriteLoadUtils.LoadSingleSprite(Path.Combine(_declare.FolderPath, _declare.IconPath));
             }
 
-            if (sprite == null)
+            _icon.sprite = sprite != null ? sprite : InternalResourcesGetter.GetIcon();
+
+            _configurable = mod.GetGameObject()?.GetWrappedComponent<IConfigurable>();
+            _configure.gameObject.SetActive(_configurable != null);
+            _website.gameObject.SetActive(!string.IsNullOrEmpty(mod.GetUrl()));
+            // Opening a folder makes no sense on a phone
+            _folder.gameObject.SetActive(!Config.isAndroid);
+            StackButtons();
+
+            // appear animation: start hidden, scaled down
+            _appear = 0f;
+            _time = 0f;
+            _pop = 0f;
+            if (_group != null) _group.alpha = 0f;
+            transform.localScale = new Vector3(0.94f, 0.94f, 1f);
+
+            RefreshState(true);
+        }
+
+        /// <summary>Lay the visible action buttons out in a column at the right edge, centred vertically.</summary>
+        private void StackButtons()
+        {
+            var visible = new List<Button>();
+            foreach (var b in new[] { _configure, _folder, _website })
+                if (b.gameObject.activeSelf) visible.Add(b);
+            float step = ButtonD + 3f;
+            float top = (visible.Count - 1) * step * 0.5f;
+            for (int i = 0; i < visible.Count; i++)
+                visible[i].transform.localPosition = new Vector3(ButtonX, top - i * step);
+        }
+
+        private void OnToggle()
+        {
+            if (_declare == null) return;
+            if (ModInfoUtils.isModDisabled(_declare.UID))
+                ModCompileLoadService.TryEnableMod(_declare);
+            else
+                ModCompileLoadService.DisableMod(_declare);
+
+            _pop = 1f;
+            RefreshState(false);
+            ModListWindow.Instance?.RefreshHeader();
+        }
+
+        private void RefreshState(bool instant)
+        {
+            ModState state = WorldBoxMod.AllRecognizedMods[_declare];
+            bool disabled_next = ModInfoUtils.isModDisabled(_declare.UID);
+            bool on = !disabled_next;
+
+            Color state_color = state switch
             {
-                sprite = InternalResourcesGetter.GetIcon();
+                ModState.LOADED => UiSkin.Green,
+                ModState.FAILED => UiSkin.Red,
+                _ => UiSkin.Gray
+            };
+            string state_text = state switch
+            {
+                ModState.LOADED => LM.Get("wbml_state_enabled"),
+                ModState.FAILED => LM.Get("wbml_state_failed"),
+                _ => LM.Get("wbml_state_disabled")
+            };
+
+            // pending change (takes effect after restart) is shown in amber
+            bool pending = state == ModState.LOADED && disabled_next || state == ModState.DISABLED && !disabled_next;
+            if (pending)
+            {
+                state_color = UiSkin.Amber;
+                state_text = LM.Get(disabled_next ? "wbml_pending_off" : "wbml_pending_on");
             }
 
-            Image icon = transform.Find("Icon").GetComponent<Image>();
-            Button configure_button = transform.Find("Configure").GetComponent<Button>();
-            Button website_button = transform.Find("Website").GetComponent<Button>();
-            Button open_folder_button = transform.Find("OpenFolder").GetComponent<Button>();
-            TipButton icon_tip_button = icon.GetComponent<TipButton>();
+            _pulse = state == ModState.FAILED;
+            _accent.color = state_color;
+            _frame.color = UiSkin.A(state_color, 0.30f);
+            _status_bg.color = UiSkin.A(state_color, 0.22f);
+            _status.color = state_color;
+            _status.text = state_text;
+            _bg.color = on ? UiSkin.CardBg : UiSkin.CardBgOff;
+            _icon.color = state == ModState.FAILED ? UiSkin.A(UiSkin.Red, 0.9f) : on ? Color.white : UiSkin.A(Color.white, 0.55f);
+            _name.color = on ? UiSkin.TextPrimary : UiSkin.TextSecondary;
 
-            icon.sprite = sprite;
-            var configurable = mod.GetGameObject()?.GetWrappedComponent<IConfigurable>();
-            configure_button.gameObject.SetActive(configurable != null);
-
-            icon.GetComponent<Button>().onClick.RemoveAllListeners();
-            configure_button.onClick.RemoveAllListeners();
-            website_button.onClick.RemoveAllListeners();
-            open_folder_button.onClick.RemoveAllListeners();
-            open_folder_button.onClick.AddListener(() => { Application.OpenURL(mod_declare.FolderPath); });
-
-
-            void RefreshToggleState()
+            _knob_target = on ? 7.5f : -7.5f;
+            _track_target = on ? (pending ? UiSkin.Amber : UiSkin.Green) : UiSkin.A(UiSkin.Gray, 0.55f);
+            if (instant)
             {
-                mod_state = WorldBoxMod.AllRecognizedMods[mod_declare];
-                string current_state_text = mod_state switch
-                {
-                    ModState.DISABLED => LM.Get("mod_state_disabled"),
-                    ModState.LOADED => LM.Get("mod_state_enabled"),
-                    ModState.FAILED => LM.Get("mod_state_failed")
-                };
-                string next_state_text = LM.Get(ModInfoUtils.isModDisabled(mod_declare.UID)
-                    ? "mod_next_state_disabled"
-                    : "mod_next_state_enabled");
-                state_text.text = $"{current_state_text}, {next_state_text}";
-
-                if (mod_state == ModState.FAILED)
-                {
-                    icon_tip_button.textOnClick = "ModLoadFailed Title";
-                    icon_tip_button.textOnClickDescription = "ModLoadFailed Description";
-                    icon_tip_button.text_description_2 = mod_declare.FailReason.ToString();
-                    icon.color = ModInfoUtils.isModDisabled(mod_declare.UID) ? Color.yellow : Color.red;
-                    return;
-                }
-                icon_tip_button.textOnClick = "ToggleMod Title";
-                icon_tip_button.textOnClickDescription = ModInfoUtils.isModDisabled(mod_declare.UID)
-                    ? "ModDisabled Description"
-                    : "ModEnabled Description";
-                icon_tip_button.text_description_2 = "";
-                icon.color = ModInfoUtils.isModDisabled(mod_declare.UID) ? Color.gray : Color.white;
+                _knob_x = _knob_target;
+                _track_color = _track_target;
+                _knob.transform.localPosition = new Vector3(_knob_x, 0);
+                _track.color = _track_color;
             }
-            icon.GetComponent<Button>().onClick.AddListener(() =>
+
+            if (state == ModState.FAILED)
             {
-                if (ModInfoUtils.isModDisabled(mod_declare.UID))
-                {
-                    ModCompileLoadService.TryEnableMod(mod_declare);
-                }
-                else
-                {
-                    ModCompileLoadService.DisableMod(mod_declare);
-                }
-
-                RefreshToggleState();
-            });
-            RefreshToggleState();
-
-            configure_button.onClick.AddListener(() =>
+                _toggle_tip.textOnClick = "ModLoadFailed Title";
+                _toggle_tip.textOnClickDescription = "ModLoadFailed Description";
+                _toggle_tip.text_description_2 = _declare.FailReason.ToString();
+            }
+            else
             {
-                // It can be sure that if mod is IConfigurable, then mod is loaded actually.
-                ModConfigureWindow.ShowWindow(configurable?.GetConfig());
-            });
-            website_button.onClick.AddListener(() => { Application.OpenURL(mod.GetUrl()); });
+                _toggle_tip.textOnClick = "ToggleMod Title";
+                _toggle_tip.textOnClickDescription = disabled_next ? "ModDisabled Description" : "ModEnabled Description";
+                _toggle_tip.text_description_2 = "";
+            }
+        }
 
-            // Hot-reload (ModReloadService) removed in WBML.
-            transform.Find("Reload").gameObject.SetActive(false);
+        private void Update()
+        {
+            if (_declare == null) return;
+            float dt = Time.unscaledDeltaTime;
+            if (dt > 0.1f) dt = 0.1f;
+            _time += dt;
+
+            // appear
+            if (_appear < 1f)
+            {
+                _appear = Mathf.Min(1f, _appear + dt * 5f);
+                float e = 1f - (1f - _appear) * (1f - _appear); // ease-out
+                if (_group != null) _group.alpha = e;
+                float s = 0.94f + 0.06f * e;
+                transform.localScale = new Vector3(s, s, 1f);
+            }
+
+            // toggle knob + track colour glide
+            float k = 1f - Mathf.Exp(-dt * 18f);
+            if (Mathf.Abs(_knob_x - _knob_target) > 0.01f)
+            {
+                _knob_x = Mathf.Lerp(_knob_x, _knob_target, k);
+                _knob.transform.localPosition = new Vector3(_knob_x, 0);
+            }
+
+            if (_track_color != _track_target)
+            {
+                _track_color = Color.Lerp(_track_color, _track_target, k);
+                _track.color = _track_color;
+            }
+
+            // icon pop
+            if (_pop > 0f)
+            {
+                _pop = Mathf.Max(0f, _pop - dt * 4f);
+                float s = 1f + 0.18f * Mathf.Sin(_pop * Mathf.PI);
+                _frame.transform.localScale = new Vector3(s, s, 1f);
+            }
+
+            // failed: breathe the strip
+            if (_pulse)
+            {
+                float a = 0.55f + 0.45f * (0.5f + 0.5f * Mathf.Sin(_time * 4f));
+                _accent.color = UiSkin.A(UiSkin.Red, a);
+            }
         }
     }
 }

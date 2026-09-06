@@ -129,6 +129,8 @@
       <EmbeddedResource Include="resources\locales\cz.json" />
       <None Remove="resources\locales\en.json" />
       <EmbeddedResource Include="resources\locales\en.json" />
+      <None Remove="resources\locales\ru.json" />
+      <EmbeddedResource Include="resources\locales\ru.json" />
       <None Remove="resources\locales\ch.json" />
       <EmbeddedResource Include="resources\locales\ch.json" />
       <None Remove="resources\square_frame_only.png" />

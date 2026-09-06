@@ -20,5 +20,12 @@
   "mod_next_state_enabled": "will load",
   "mod_next_state_disabled": "won't load",
   "WBML_ModsList": "Mods",
-  "WBML_ModsList Description": "Here are your mods.\nYou can enable, disable or configure your mods."
+  "WBML_ModsList Description": "Here are your mods.\nYou can enable, disable or configure your mods.",
+  "wbml_no_mods_title": "No mods yet",
+  "wbml_no_mods_hint": "Drop mod folders into",
+  "wbml_state_enabled": "Enabled",
+  "wbml_state_disabled": "Disabled",
+  "wbml_state_failed": "Failed",
+  "wbml_pending_on": "On after restart",
+  "wbml_pending_off": "Off after restart"
 }
