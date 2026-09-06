@@ -1,9 +1,9 @@
 {
   "name": "HelloMod",
-  "author": "WBML",
+  "author": "GodForge",
   "version": "0.1.0",
-  "description": "Minimal precompiled WBML example: writes a greeting to the log.",
-  "GUID": "wbml.hellomod",
+  "description": "Minimal precompiled GodForge example: writes a greeting to the log.",
+  "GUID": "godforge.hellomod",
   "Dependencies": [],
   "iconPath": "icon.png"
 }

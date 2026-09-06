@@ -9,10 +9,10 @@ internal static class UIManager
     public static void init()
     {
         InformationWindow.CreateWindow("Information", "Information Title");
-        ModListWindow.CreateAndInit("WBMLModList");
+        ModListWindow.CreateAndInit("GodForgeModList");
         ModConfigureWindow.CreateAndInit("ModConfigure");
         PowerButtonCreator.AddButtonToTab(
-            PowerButtonCreator.CreateWindowButton("WBML_ModsList", "WBMLModList",
+            PowerButtonCreator.CreateWindowButton("GodForge_ModsList", "GodForgeModList",
                                                   InternalResourcesGetter.GetIcon()),
             PowerButtonCreator.GetTab(PowerTabNames.Main),
           22);

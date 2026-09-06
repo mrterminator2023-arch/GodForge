@@ -8,7 +8,7 @@ using UnityEngine.UI;
 namespace NeoModLoader.ui;
 
 /// <summary>
-///     Decoration: a handful of small translucent WBML logos slowly drifting and bouncing inside a rect.
+///     Decoration: a handful of small translucent GodForge logos slowly drifting and bouncing inside a rect.
 ///     Allocation-free Update (all state lives in preallocated arrays). Disabled by <see cref="Branding.FloatingLogos"/>.
 /// </summary>
 public class FloatingLogos : WrappedBehaviour

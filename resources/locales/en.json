@@ -1,5 +1,5 @@
 {
-  "WBMLModList Title": "Mods",
+  "GodForgeModList Title": "Mods",
   "Information Title": "Information",
   "TypeMod Title": "Mod",
   "NMLMenu Title": "Mods",
@@ -8,7 +8,7 @@
   "ModConfigure Title": "Mod Configure",
   "OpenFolder Title": "Open Mod Folder",
   "ToggleMod Title": "Toggle Mod",
-  "WBML About": "About WBML\nClick to show credits",
+  "GodForge About": "About GodForge\nClick to show credits",
   "mod_load_failed_title": "Failed to load mod",
   "mod_load_failed_description": "Failed to load mod\nClick to disable it\nPlease check the mod is valid",
   "toggle_mod_title": "Toggle Mod",
@@ -19,13 +19,13 @@
   "mod_state_failed": "Current <color=red>Failed</color>",
   "mod_next_state_enabled": "will load",
   "mod_next_state_disabled": "won't load",
-  "WBML_ModsList": "Mods",
-  "WBML_ModsList Description": "Here are your mods.\nYou can enable, disable or configure your mods.",
-  "wbml_no_mods_title": "No mods yet",
-  "wbml_no_mods_hint": "Drop mod folders into",
-  "wbml_state_enabled": "Enabled",
-  "wbml_state_disabled": "Disabled",
-  "wbml_state_failed": "Failed",
-  "wbml_pending_on": "On after restart",
-  "wbml_pending_off": "Off after restart"
+  "GodForge_ModsList": "Mods",
+  "GodForge_ModsList Description": "Here are your mods.\nYou can enable, disable or configure your mods.",
+  "gfml_no_mods_title": "No mods yet",
+  "gfml_no_mods_hint": "Drop mod folders into",
+  "gfml_state_enabled": "Enabled",
+  "gfml_state_disabled": "Disabled",
+  "gfml_state_failed": "Failed",
+  "gfml_pending_on": "On after restart",
+  "gfml_pending_off": "Off after restart"
 }

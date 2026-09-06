@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- Generic csproj for building a precompiled WBML mod. Driven by tools/build_mod.sh:
+  <!-- Generic csproj for building a precompiled GodForge mod. Driven by tools/build_mod.sh:
        ModDir     = mod folder containing mod.json and Code/**.cs
        ModGuid    = value of "GUID" from mod.json (output assembly name)
-       WbmlRoot   = WBML repo root (WBML.dll + android-assembly-dependencies)
+       GodForgeRoot   = GodForge repo root (GodForge.dll + android-assembly-dependencies)
        Il2CppDir  = optional folder with Il2CppAssemblies dumped from the phone (preferred over repo copies) -->
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -10,7 +10,7 @@
     <Nullable>disable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DefineConstants>IL2CPP;WBML</DefineConstants>
+    <DefineConstants>IL2CPP;GODFORGE</DefineConstants>
     <AssemblyName>$(ModGuid)</AssemblyName>
     <RootNamespace>$(ModGuid)</RootNamespace>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
@@ -21,8 +21,8 @@
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
     <NoWarn>CS1591;CS8632;MSB3277</NoWarn>
-    <WbmlDll>$(WbmlRoot)/bin/Release/net8.0/WBML.dll</WbmlDll>
-    <DepsDir>$(WbmlRoot)/android-assembly-dependencies</DepsDir>
+    <GodForgeDll>$(GodForgeRoot)/bin/Release/net8.0/GodForge.dll</GodForgeDll>
+    <DepsDir>$(GodForgeRoot)/android-assembly-dependencies</DepsDir>
   </PropertyGroup>
 
   <ItemGroup>
@@ -30,7 +30,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="WBML"><HintPath>$(WbmlDll)</HintPath><Private>false</Private></Reference>
+    <Reference Include="GodForge"><HintPath>$(GodForgeDll)</HintPath><Private>false</Private></Reference>
   </ItemGroup>
 
   <!-- Game/Unity/Il2Cpp assemblies from the phone dump take priority; repo copies fill the rest -->

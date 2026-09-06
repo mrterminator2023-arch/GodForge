@@ -1,5 +1,5 @@
 
-using WBML;
+using GodForge;
 using static NeoModLoader.AndroidCompatibilityModule.IL2CPPHelper;
 using UnityEngine;
 using UnityEngine.Events;

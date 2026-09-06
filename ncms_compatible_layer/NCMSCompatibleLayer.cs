@@ -90,7 +90,7 @@ namespace NeoModLoader.ncms_compatible_layer
         public static void Init()
         {
             NCMS.ModLoader.Mods ??= new();
-            foreach (IMod mod in WBML.WorldBoxMod.LoadedMods)
+            foreach (IMod mod in GodForge.WorldBoxMod.LoadedMods)
             {
                 ModDeclare declare = mod.GetDeclaration();
                 NCMS.ModLoader.Mods.Add(GenerateNCMSMod(declare));

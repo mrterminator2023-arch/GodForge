@@ -12,7 +12,7 @@ using NeoModLoader.services;
 using NeoModLoader.ui;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
-using WBML;
+using GodForge;
 using UnityEngine;
 namespace NeoModLoader.utils;
 

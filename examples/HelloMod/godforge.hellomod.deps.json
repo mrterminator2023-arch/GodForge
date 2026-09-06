@@ -6,15 +6,15 @@
   "compilationOptions": {},
   "targets": {
     ".NETCoreApp,Version=v8.0": {
-      "wbml.hellomod/1.0.0": {
+      "godforge.hellomod/1.0.0": {
         "runtime": {
-          "wbml.hellomod.dll": {}
+          "godforge.hellomod.dll": {}
         }
       }
     }
   },
   "libraries": {
-    "wbml.hellomod/1.0.0": {
+    "godforge.hellomod/1.0.0": {
       "type": "project",
       "serviceable": false,
       "sha512": ""

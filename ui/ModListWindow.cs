@@ -1,4 +1,4 @@
-using WBML;
+using GodForge;
 
 using static NeoModLoader.AndroidCompatibilityModule.IL2CPPHelper;
 using NeoModLoader.api;
@@ -12,7 +12,7 @@ using UnityEngine.UI;
 namespace NeoModLoader.ui;
 
 /// <summary>
-///     List window of all mods recognized by WBML.
+///     List window of all mods recognized by GodForge.
 ///     Own look: dark rounded cards with a coloured state strip, animated toggle switch, sticky header with counters,
 ///     friendly empty state and a compact About pill. Everything is drawn with <see cref="UiSkin"/> sprites.
 /// </summary>
@@ -88,7 +88,7 @@ public class ModListWindow : AbstractListWindow<ModListWindow, IMod>
 
         UiSkin.Img("BigLogo", _empty_state.transform, InternalResourcesGetter.GetIcon(),
             new Color(1f, 1f, 1f, 0.35f), new Vector2(0, 30), new Vector2(48, 48));
-        UiSkin.Txt("Title", _empty_state.transform, LM.Get("wbml_no_mods_title"), 8, UiSkin.TextPrimary,
+        UiSkin.Txt("Title", _empty_state.transform, LM.Get("gfml_no_mods_title"), 8, UiSkin.TextPrimary,
             new Vector2(0, -6), new Vector2(190, 14), TextAnchor.MiddleCenter);
         _empty_hint = UiSkin.Txt("Hint", _empty_state.transform, "", 5, UiSkin.TextDim, new Vector2(0, -30),
             new Vector2(180, 30), TextAnchor.UpperCenter, true);
@@ -99,13 +99,13 @@ public class ModListWindow : AbstractListWindow<ModListWindow, IMod>
     {
         float y = -bg_h * 0.5f + 12;
 
-        // pill button "WBML v0.1.0"
+        // pill button "GodForge v0.1.0"
         Image pill = UiSkin.Rect("ModLoaderButton", BackgroundTransform, 6, UiSkin.A(UiSkin.Accent, 0.22f),
             new Vector2(0, y), new Vector2(78, 12), true, typeof(Button));
         pill.transform.SetAsLastSibling();
         UiSkin.Img("Logo", pill.transform, InternalResourcesGetter.GetIcon(), Color.white, new Vector2(-31, 0),
             new Vector2(8, 8));
-        UiSkin.Txt("Label", pill.transform, $"{Branding.Name} v{Branding.Version}  <color=#5aa9ff>i</color>", 5,
+        UiSkin.Txt("Label", pill.transform, $"{Branding.Name} ({Branding.ShortName}) v{Branding.Version}  <color=#5aa9ff>i</color>", 5,
             UiSkin.TextPrimary, new Vector2(5, 0), new Vector2(64, 12), TextAnchor.MiddleCenter);
 
         // credits card above the pill
@@ -176,7 +176,7 @@ public class ModListWindow : AbstractListWindow<ModListWindow, IMod>
         {
             _empty_state.SetActive(total == 0);
             if (total == 0 && _empty_hint != null)
-                _empty_hint.text = LM.Get("wbml_no_mods_hint") + "\n" + UiSkin.Col(Paths.ModsPath, UiSkin.Accent);
+                _empty_hint.text = LM.Get("gfml_no_mods_hint") + "\n" + UiSkin.Col(Paths.ModsPath, UiSkin.Accent);
         }
     }
 
@@ -386,9 +386,9 @@ public class ModListWindow : AbstractListWindow<ModListWindow, IMod>
             };
             string state_text = state switch
             {
-                ModState.LOADED => LM.Get("wbml_state_enabled"),
-                ModState.FAILED => LM.Get("wbml_state_failed"),
-                _ => LM.Get("wbml_state_disabled")
+                ModState.LOADED => LM.Get("gfml_state_enabled"),
+                ModState.FAILED => LM.Get("gfml_state_failed"),
+                _ => LM.Get("gfml_state_disabled")
             };
 
             // pending change (takes effect after restart) is shown in amber
@@ -396,7 +396,7 @@ public class ModListWindow : AbstractListWindow<ModListWindow, IMod>
             if (pending)
             {
                 state_color = UiSkin.Amber;
-                state_text = LM.Get(disabled_next ? "wbml_pending_off" : "wbml_pending_on");
+                state_text = LM.Get(disabled_next ? "gfml_pending_off" : "gfml_pending_on");
             }
 
             _pulse = state == ModState.FAILED;

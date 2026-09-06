@@ -74,7 +74,7 @@ public static class UiSkin
         float b = r + 1;
         Sprite sprite = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), K, 0,
             SpriteMeshType.FullRect, new Vector4(b, b, b, b));
-        sprite.name = $"wbml_rounded_{radius}";
+        sprite.name = $"gfml_rounded_{radius}";
         _rounded[radius] = sprite;
         return sprite;
     }
@@ -99,7 +99,7 @@ public static class UiSkin
         tex.Apply();
         Sprite sprite = Sprite.Create(tex, new Rect(0, 0, px, px), new Vector2(0.5f, 0.5f), K, 0,
             SpriteMeshType.FullRect);
-        sprite.name = $"wbml_circle_{diameter}";
+        sprite.name = $"gfml_circle_{diameter}";
         _circles[diameter] = sprite;
         return sprite;
     }

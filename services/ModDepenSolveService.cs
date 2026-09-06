@@ -1,4 +1,4 @@
-using WBML;
+using GodForge;
 using NeoModLoader.api;
 using NeoModLoader.utils;
 

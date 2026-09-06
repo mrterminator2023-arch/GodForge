@@ -7,12 +7,12 @@
         <Nullable>disable</Nullable>
         <LangVersion>14</LangVersion>
         <GenerateDocumentationFile>True</GenerateDocumentationFile>
-        <Authors>WBML contributors (built upon NeoModLoader by WorldBoxOpenMods)</Authors>
+        <Authors>GodForge contributors (built upon NeoModLoader by WorldBoxOpenMods)</Authors>
         <AssemblyVersion>0.1.0</AssemblyVersion>
         <DebugType>portable</DebugType>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-        <AssemblyName>WBML</AssemblyName>
-        <RootNamespace>WBML</RootNamespace>
+        <AssemblyName>GodForge</AssemblyName>
+        <RootNamespace>GodForge</RootNamespace>
         <Version>0.1.0</Version>
     </PropertyGroup>
 

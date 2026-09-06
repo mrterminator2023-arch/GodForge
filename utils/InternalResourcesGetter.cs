@@ -1,4 +1,4 @@
-using WBML;
+using GodForge;
 using System.Reflection;
 using NeoModLoader.constants;
 using UnityEngine;

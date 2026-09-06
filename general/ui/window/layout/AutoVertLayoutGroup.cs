@@ -1,5 +1,5 @@
 
-using WBML;
+using GodForge;
 using NeoModLoader.utils;
 using UnityEngine;
 using UnityEngine.UI;

@@ -1,5 +1,5 @@
 {
-  "WBMLModList Title": "模组列表",
+  "GodForgeModList Title": "模组列表",
   "Information Title": "信息",
   "TypeMod Title": "模组",
   "NMLMenu Title": "模组列表",
@@ -8,7 +8,7 @@
   "ModConfigure Title": "模组设置",
   "OpenFolder Title": "打开模组文件夹",
   "ToggleMod Title": "启用/禁用模组",
-  "WBML About": "关于 WBML\n点击查看致谢",
+  "GodForge About": "关于 GodForge\n点击查看致谢",
   "mod_load_failed_title": "模组加载失败",
   "mod_load_failed_description": "模组加载失败, 请检查模组是否完好且适配当前版本\n点击禁用\n下面是错误信息",
   "toggle_mod_title": "启用/禁用模组",
@@ -19,6 +19,6 @@
   "mod_state_failed": "当前<color=red>加载失败</color>",
   "mod_next_state_enabled": "下次将启用",
   "mod_next_state_disabled": "下次将禁用",
-  "WBML_ModsList": "模组列表",
-  "WBML_ModsList Description": "这里是你的模组列表。\n你可以在这里启用,禁用和配置模组。"
+  "GodForge_ModsList": "模组列表",
+  "GodForge_ModsList Description": "这里是你的模组列表。\n你可以在这里启用,禁用和配置模组。"
 }

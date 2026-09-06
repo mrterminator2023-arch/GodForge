@@ -4,7 +4,7 @@ using DG.Tweening;
 using Il2CppDG.Tweening;
 #endif
 
-using WBML;
+using GodForge;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;

@@ -6,32 +6,32 @@ namespace NeoModLoader.constants;
 public static class Branding
 {
     /// <summary>Full name of the loader (file name is Name + ".dll")</summary>
-    public const string Name = "WBML";
+    public const string Name = "GodForge";
 
     /// <summary>Short name used in log prefixes</summary>
-    public const string ShortName = "WBML";
+    public const string ShortName = "GFML";
 
     /// <summary>Human readable version</summary>
     public const string Version = "0.1.0";
 
     /// <summary>Root of embedded manifest resources (RootNamespace + ".resources")</summary>
-    public const string ResourceRoot = "WBML.resources";
+    public const string ResourceRoot = "GodForge.resources";
 
     /// <summary>Embedded logo file name under resources/</summary>
     public const string LogoResource = "logo.png";
 
     /// <summary>Sprite path the logo is registered under</summary>
-    public const string LogoSpritePath = "ui/icons/wbml";
+    public const string LogoSpritePath = "ui/icons/godforge";
 
     /// <summary>Name of the cache folder inside the native mods folder</summary>
-    public const string CacheFolder = "WBML";
+    public const string CacheFolder = "GodForge";
 
     /// <summary>Text shown in the About window</summary>
     public const string AboutText =
-        Name + " v" + Version + " - WorldBox Mod Loader for Android\n\n" +
-        "WBML is built upon NeoModLoader / AndroidModLoader by WorldBoxOpenMods (MIT). " +
+        Name + " (" + ShortName + ") v" + Version + " - WorldBox Mod Loader for Android\n\n" +
+        Name + " is built upon NeoModLoader / AndroidModLoader by WorldBoxOpenMods (MIT). " +
         "We learned a great deal from their code and are grateful to its authors.\n\n" +
-        "See CREDITS.md and LICENSE-NeoModLoader shipped with WBML.";
+        "See CREDITS.md and LICENSE-NeoModLoader shipped with " + Name + ".";
 
     /// <summary>Show the "PCInput" / "MouseMode" buttons of the PC input overlay in the top-left corner. Input handling works regardless.</summary>
     public const bool ShowPCInputOverlay = false;

@@ -10,7 +10,7 @@ using NeoModLoader.constants;
 using NeoModLoader.General;
 using NeoModLoader.ncms_compatible_layer;
 using NeoModLoader.utils;
-using WorldBoxMod = WBML.WorldBoxMod;
+using WorldBoxMod = GodForge.WorldBoxMod;
 using UnityEngine;
 using UnityEngine.Networking;
 

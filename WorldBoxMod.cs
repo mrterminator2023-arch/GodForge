@@ -12,7 +12,7 @@ using NeoModLoader.ui;
 using NeoModLoader.utils;
 using UnityEngine;
 using Il2CppInterop.Runtime.Injection;
-namespace WBML;
+namespace GodForge;
 /// <summary>
 /// Main class
 /// </summary>

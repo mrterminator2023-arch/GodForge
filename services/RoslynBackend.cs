@@ -15,7 +15,7 @@ using NeoModLoader.constants;
 using NeoModLoader.General;
 using NeoModLoader.ncms_compatible_layer;
 using NeoModLoader.utils;
-using WorldBoxMod = WBML.WorldBoxMod;
+using WorldBoxMod = GodForge.WorldBoxMod;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -277,7 +277,7 @@ internal sealed class RoslynBackend : ICompilerBackend
     public bool IsPrepared => _default_ref != null;
 
     /// <summary>
-    /// Build the default reference set (game, MelonLoader, Il2Cpp assemblies, WBML itself). Idempotent.
+    /// Build the default reference set (game, MelonLoader, Il2Cpp assemblies, GodForge itself). Idempotent.
     /// </summary>
     public void EnsureDefaultReferences()
     {

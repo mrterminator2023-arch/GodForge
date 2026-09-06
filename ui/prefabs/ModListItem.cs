@@ -1,5 +1,5 @@
 
-using WBML;
+using GodForge;
 using NeoModLoader.api;
 using NeoModLoader.General;
 using NeoModLoader.General.UI.Prefabs;
