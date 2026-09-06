@@ -60,7 +60,12 @@ public static class Paths
     /// <summary>
     /// Path to the publicized Assembly-CSharp.dll file, on android this is used as IL replacements for transpiler support
     /// </summary>
-    public static readonly string PublicizedAssemblyPath = Combine(NMLPath, "Assembly-CSharp-Publicized.dll");
+    public static readonly string PublicizedAssemblyPath = Combine(CompilerPackPath, "Assembly-CSharp-Publicized.dll");
+
+    /// <summary>
+    /// Optional compiler pack folder (Roslyn + Assembly-CSharp-Publicized), needed only for source mods
+    /// </summary>
+    public static readonly string CompilerPackPath = Combine(NMLPath, "Compiler");
 
     /// <summary>
     /// Path to folder mods config under persistent data folder

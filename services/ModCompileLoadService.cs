@@ -2,10 +2,6 @@ using System.IO.Compression;
 using System.Reflection;
 using System.Text;
 using HarmonyLib;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.Emit;
-using Microsoft.CodeAnalysis.Text;
 using ModDeclaration;
 using NCMS;
 
@@ -25,235 +21,6 @@ using NeoModLoader.AndroidCompatibilityModule;
 /// </summary>
 public static class ModCompileLoadService
 {
-    private static string[] _default_ref_path = null!;
-    private static readonly Dictionary<string, string> mod_inc_path = new();
-    private static readonly HashSet<string> _loaded_ref = new();
-
-    private static MetadataReference[] _default_ref = null!;
-    private static MetadataReference _publicized_assembly_ref = null!;
-    private static readonly Dictionary<string, MetadataReference> mod_ref = new();
-
-    private static bool compileMod(ModDeclare pModDecl, IEnumerable<MetadataReference> pDefaultInc,
-        string[] pAddInc, Dictionary<string, MetadataReference> pModInc, out string pCompileErrors, bool pForce = false,
-        bool pDisableOptionalDepen = false)
-    {
-        pCompileErrors = string.Empty;
-        var available_optional_depens = pDisableOptionalDepen
-            ? new List<string>()
-            : pModDecl.OptionalDependencies.Where(pModInc.ContainsKey).ToList();
-        var available_depens = pModDecl.Dependencies.Where(pModInc.ContainsKey).ToList();
-        if (!pForce && !ModInfoUtils.doesModNeedRecompile(pModDecl, available_depens, available_optional_depens))
-        {
-            LoadAddInc();
-            return true;
-        }
-
-        var preprocessor_symbols = new List<string>();
-
-        List<MetadataReference> list = pDefaultInc.ToList();
-        list.AddRange(pAddInc.Select(inc => MetadataReference.CreateFromFile(inc)));
-        LoadAddInc();
-        if (pModDecl.UsePublicizedAssembly && !Config.isAndroid)
-        {
-            list.Add(_publicized_assembly_ref);
-        }
-
-        foreach (var depen in available_depens)
-        {
-            list.Add(pModInc[depen]);
-
-            if (pModInc[depen] != null) continue;
-            LogService.LogError($"{pModDecl.UID}'s optional ref of {depen} instance is null");
-            return false;
-        }
-
-        foreach (var option_depen in available_optional_depens)
-        {
-            list.Add(pModInc[option_depen]);
-            preprocessor_symbols.Add(ModDependencyUtils.ParseDepenNameToPreprocessSymbol(option_depen));
-            if (pModInc[option_depen] != null) continue;
-            LogService.LogError($"{pModDecl.UID}'s optional ref of {option_depen} instance is null");
-            return false;
-        }
-
-        var syntaxTrees = new List<SyntaxTree>();
-        var code_files = SystemUtils.SearchFileRecursive(pModDecl.FolderPath,
-            file_name =>
-                file_name.EndsWith(".cs") && !file_name.StartsWith("."),
-            dir_name => !dir_name.StartsWith(".") &&
-                        !Paths.CompileIgnoreSearchDirectories.Contains(dir_name));
-        var embeded_resources = new List<ResourceDescription>();
-
-        bool is_ncms_mod = false;
-        if (Others.IsIL2CPP)
-        {
-            preprocessor_symbols.Add("IL2CPP");
-        }
-        else
-        {
-           syntaxTrees.Add(CSharpSyntaxTree.ParseText("global using Il2CppSystem = System;"));
-        }
-        var parse_option = new CSharpParseOptions(LanguageVersion.Latest, preprocessorSymbols: preprocessor_symbols);
-
-        foreach (var code_file in code_files)
-        {
-            SourceText sourceText = SourceText.From(File.ReadAllText(code_file), Encoding.UTF8);
-            SyntaxTree syntaxTree =
-                CSharpSyntaxTree.ParseText(
-                    sourceText,
-                    parse_option,
-                    code_file.Substring(pModDecl.FolderPath.Length + 1)
-                );
-            syntaxTrees.Add(syntaxTree);
-            if (!is_ncms_mod)
-            {
-                is_ncms_mod = NCMSCompatibleLayer.IsNCMSMod(syntaxTree);
-            }
-        }
-
-
-        if (is_ncms_mod)
-        {
-            // Load Manifest Files
-            string embeded_resource_folder = Path.Combine(pModDecl.FolderPath, Paths.NCMSModEmbededResourceFolderName);
-            if (Directory.Exists(embeded_resource_folder))
-            {
-                var embeded_resource_files = Directory.GetFiles(
-                    embeded_resource_folder, "*",
-                    SearchOption.AllDirectories);
-                foreach (var file in embeded_resource_files)
-                {
-                    var relative_path = file.Substring(embeded_resource_folder.Length + 1);
-                    var resource_name =
-                        $"{pModDecl.Name}.Resources.{relative_path.Replace('\\', '.').Replace('/', '.')}";
-                    var resource_desc = new ResourceDescription(
-                        resource_name,
-                        () => File.OpenRead(file),
-                        true
-                    );
-                    embeded_resources.Add(resource_desc);
-                }
-            }
-
-            // Load Global Object
-            SourceText global_object_sourceText = SourceText.From(NCMSCompatibleLayer.modGlobalObject, Encoding.UTF8);
-            SyntaxTree global_object_syntaxTree =
-                CSharpSyntaxTree.ParseText(
-                    global_object_sourceText,
-                    parse_option,
-                    $"{pModDecl.Name}.GlobalObject.cs"
-                );
-            syntaxTrees.Add(global_object_syntaxTree);
-        }
-
-        pModDecl.IsNCMSMod = is_ncms_mod;
-
-        void LoadAddInc()
-        {
-            foreach (var inc in pAddInc)
-            {
-                string file_name = Path.GetFileName(inc);
-                if (file_name == "Assembly-CSharp.dll" && !Config.isAndroid)
-                {
-                    continue;
-                }
-
-                if (_loaded_ref.Contains(file_name)) continue;
-                _loaded_ref.Add(file_name);
-                try
-                {
-                    var loaded_inc = Assembly.LoadFrom(inc);
-                    LogService.LogInfo($"Load {loaded_inc.FullName}");
-                }
-                catch (Exception e)
-                {
-                    LogService.LogWarning($"Failed to load Assembly {file_name} for mod {pModDecl.UID}");
-                    LogService.LogWarning(e.Message);
-                    LogService.LogWarning(e.StackTrace);
-                }
-            }
-        }
-
-
-        var identity = new AssemblyIdentity(
-            pModDecl.UID, pModDecl.ParseVersion(), null
-        );
-
-        var compilation = CSharpCompilation.Create(
-            $"{pModDecl.UID}",
-            syntaxTrees,
-            list,
-            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,
-                allowUnsafe: true, deterministic: true, assemblyIdentityComparer: AssemblyIdentityComparer.Default)
-        );
-
-        using MemoryStream dllms = new MemoryStream();
-        using MemoryStream pdbms = new MemoryStream();
-
-        string dll_path = Path.Combine(Paths.CompiledModsPath, $"{pModDecl.UID}.dll");
-        string pdb_path = Path.Combine(Paths.CompiledModsPath, $"{pModDecl.UID}.pdb");
-
-        var result = compilation.Emit(dllms, pdbms,
-            manifestResources: embeded_resources,
-            options: new EmitOptions(
-                debugInformationFormat: DebugInformationFormat
-                    .PortablePdb,
-                pdbFilePath: pdb_path
-            )
-        );
-
-        if (!result.Success)
-        {
-            pCompileErrors = CollectCompileErrors(result.Diagnostics);
-            return false;
-        }
-
-        using var dll_fs = new FileStream(dll_path, FileMode.Create, FileAccess.Write);
-        dllms.Seek(0, SeekOrigin.Begin);
-        dllms.WriteTo(dll_fs);
-
-        using var pdb_fs = new FileStream(pdb_path, FileMode.Create, FileAccess.Write);
-        pdbms.Seek(0, SeekOrigin.Begin);
-        pdbms.WriteTo(pdb_fs);
-
-        ModInfoUtils.RecordMod(pModDecl, available_depens, available_optional_depens, false, false);
-        return true;
-    }
-
-    private static string CollectCompileErrors(IEnumerable<Diagnostic> pDiagnostics)
-    {
-        StringBuilder diags = new StringBuilder();
-        foreach (var diagnostic in pDiagnostics)
-        {
-            if (diagnostic.Severity != DiagnosticSeverity.Error) continue;
-            diags.AppendLine(diagnostic.ToString());
-        }
-
-        return diags.ToString().TrimEnd();
-    }
-
-    private static void LogCompileFailure(string pModUid, string pCompileErrors)
-    {
-        if (string.IsNullOrWhiteSpace(pCompileErrors))
-        {
-            LogService.LogError($"Failed to compile mod {pModUid}");
-            return;
-        }
-
-        LogService.LogError($"Failed to compile mod {pModUid}:\n{pCompileErrors}");
-    }
-
-    private static void LogCompileFailureWithOptionalDependencies(string pModUid, string pCompileErrors)
-    {
-        if (string.IsNullOrWhiteSpace(pCompileErrors))
-        {
-            LogService.LogWarning($"Failed to compile mod {pModUid} with optional dependencies, but succeeded after disabling them");
-            return;
-        }
-
-        LogService.LogWarning(
-            $"Failed to compile mod {pModUid} with optional dependencies, but succeeded after disabling them:\n{pCompileErrors}");
-    }
 
     internal static void LoadLocales(object pModComponent, ModDeclare pModDeclare, bool pUpdateTexts = true,
         bool pLogLoadedFiles = false)
@@ -297,42 +64,36 @@ public static class ModCompileLoadService
         LM.ApplyLocale(pUpdateTexts);
     }
     /// <summary>
-    /// Prepare references for mod nodes
+    /// Prepare references for mod nodes. Roslyn (the optional compiler pack) is only loaded when at least one
+    /// mod in the list has no precompiled dll in its folder.
     /// </summary>
     /// <param name="pModNodes"></param>
     public static void prepareCompile(List<ModDependencyNode> pModNodes)
     {
-        foreach (var mod_node in pModNodes)
+        var source_mods = pModNodes.Where(n => !IsPrecompiled(n.mod_decl)).ToList();
+        if (source_mods.Count == 0)
         {
-            mod_inc_path[mod_node.mod_decl.UID] =
-                Path.Combine(Paths.CompiledModsPath, $"{mod_node.mod_decl.UID}.dll");
+            LogService.LogInfo("All mods are precompiled, compiler pack is not needed");
+            return;
         }
 
-        var default_ref_path_list = new List<string>();
-        default_ref_path_list.AddRange(Directory.GetFiles(Paths.NMLAssembliesPath, "*.dll"));
-        if (Config.isAndroid)
+        if (!CompilerPack.EnsureLoaded())
         {
-            default_ref_path_list.AddRange(Directory.GetFiles(Paths.MelonAssemblies, "*.dll"));
-            default_ref_path_list.AddRange(Directory.GetFiles(Paths.Il2CppAssemblies, "*.dll"));
+            foreach (var node in source_mods)
+                LogService.LogError(
+                    $"Source mod {node.mod_decl.UID} requires the {Branding.Name} Compiler pack in {Paths.CompilerPackPath}");
+            return;
         }
-        default_ref_path_list.AddRange(Directory.GetFiles(Paths.ManagedPath, "*.dll"));
-        default_ref_path_list.Add(Paths.NMLModPath);
-        _default_ref_path = default_ref_path_list.ToArray();
 
-        _default_ref = new MetadataReference[_default_ref_path.Length];
-        for (int i = 0; i < _default_ref_path.Length; i++)
-        {
-            try
-            {
-                _default_ref[i] = MetadataReference.CreateFromFile(_default_ref_path[i]);
-                if (_default_ref[i] == null) throw new Exception("Ref created is null");
-            }
-            catch (Exception e)
-            {
-                LogService.LogError($"Error when load default reference {_default_ref_path[i]}: {e.Message}");
-            }
-        }
-        _publicized_assembly_ref = MetadataReference.CreateFromFile(Paths.PublicizedAssemblyPath);
+        ModCompiler.PrepareReferences(pModNodes);
+    }
+
+    /// <summary>
+    /// Whether the mod folder contains a precompiled dll
+    /// </summary>
+    public static bool IsPrecompiled(ModDeclare pModDeclare)
+    {
+        return Directory.GetFiles(pModDeclare.FolderPath, "*.dll").Length > 0;
     }
 
     /// <summary>
@@ -341,8 +102,8 @@ public static class ModCompileLoadService
     /// <param name="pModNode"></param>
     public static void prepareCompileRuntime(ModDependencyNode pModNode)
     {
-        mod_inc_path[pModNode.mod_decl.UID] =
-            Path.Combine(Paths.CompiledModsPath, $"{pModNode.mod_decl.UID}.dll");
+        if (IsPrecompiled(pModNode.mod_decl) || !CompilerPack.EnsureLoaded()) return;
+        ModCompiler.PrepareRuntime(pModNode);
     }
 
     /// <summary>
@@ -363,60 +124,22 @@ public static class ModCompileLoadService
             string main_dll = precompiled_dll_files.FirstOrDefault(file =>
                                   Path.GetFileNameWithoutExtension(file) == pModNode.mod_decl.UID) ??
                               precompiled_dll_files[0];
-            mod_ref[pModNode.mod_decl.UID] = MetadataReference.CreateFromFile(main_dll);
+            if (CompilerPack.IsLoaded) ModCompiler.RegisterPrecompiled(pModNode.mod_decl.UID, main_dll);
             return true;
         }
 
-        bool compile_result;
-        bool has_available_optional_depen = pModNode.mod_decl.OptionalDependencies.Any(mod_ref.ContainsKey);
-        string compile_errors;
-        compile_result =
-            compileMod(pModNode.mod_decl, _default_ref,
-                pModNode.GetAdditionReferences().ToArray(), mod_ref, out compile_errors, pForce
-            );
-        if (compile_result)
+        if (!CompilerPack.EnsureLoaded())
         {
-            mod_ref[pModNode.mod_decl.UID] =
-                MetadataReference.CreateFromFile(Path.Combine(Paths.CompiledModsPath,
-                    $"{pModNode.mod_decl.UID}.dll"));
-        }
-        else if (has_available_optional_depen)
-        {
-            LogService.LogWarning(
-                $"Cannot compile mod {pModNode.mod_decl.UID} with Optional Dependencies, try to disable them");
-            string compile_errors_without_optional_depen;
-            compile_result =
-                compileMod(pModNode.mod_decl, _default_ref,
-                    pModNode.GetAdditionReferences(false).ToArray(), mod_ref, out compile_errors_without_optional_depen,
-                    pForce, true
-                );
-            if (compile_result)
-            {
-                mod_ref[pModNode.mod_decl.UID] =
-                    MetadataReference.CreateFromFile(Path.Combine(Paths.CompiledModsPath,
-                        $"{pModNode.mod_decl.UID}.dll"));
-                LogCompileFailureWithOptionalDependencies(pModNode.mod_decl.UID, compile_errors);
-            }
-            else
-            {
-                LogCompileFailure(pModNode.mod_decl.UID, compile_errors_without_optional_depen);
-            }
-        }
-        else
-        {
-            LogCompileFailure(pModNode.mod_decl.UID, compile_errors);
-        }
-
-        if (!compile_result)
-        {
-            mod_inc_path.Remove(pModNode.mod_decl.UID);
             pModNode.mod_decl.FailReason.AppendLine(
-                "Compile Failed\n Check Log for details\n All mods compiled before it will be recompiled next time");
-            File.WriteAllText(Paths.ModCompileRecordPath, "");
+                $"Source mod requires the {Branding.Name} Compiler pack\nPut Roslyn dlls into {Paths.CompilerPackPath}\nor ship a precompiled {pModNode.mod_decl.UID}.dll");
+            LogService.LogError(
+                $"Source mod {pModNode.mod_decl.UID} requires the {Branding.Name} Compiler pack in {Paths.CompilerPackPath}");
+            return false;
         }
 
-        return compile_result;
+        return ModCompiler.CompileNode(pModNode, pForce);
     }
+
 
     /// <summary>
     /// Load a list of mods

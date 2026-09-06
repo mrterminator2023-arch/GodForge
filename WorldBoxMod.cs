@@ -307,40 +307,6 @@ public class WorldBoxMod : BaseBehaviour
                 extractAssemblies();
             }
         }
-        try
-        {
-            using var stream =
-                NeoModLoaderAssembly.GetManifestResourceStream(
-                    InternalResourcesGetter.Resource + ".assemblies.Assembly-CSharp-Publicized.dll");
-            if (File.Exists(Paths.PublicizedAssemblyPath))
-            {
-                var modupdate_time = new FileInfo(Paths.NMLModPath).LastWriteTime;
-                var assemblyupdate_time = new FileInfo(Paths.PublicizedAssemblyPath).CreationTime;
-                if (modupdate_time > assemblyupdate_time)
-                {
-                    LogService.LogInfo($"{Branding.Name}.dll is newer than Assembly-CSharp-Publicized.dll, " +
-                                       $"re-extract Assembly-CSharp-Publicized.dll from {Branding.Name}.dll");
-                    File.Delete(Paths.PublicizedAssemblyPath);
-                    using var file = new FileStream(Paths.PublicizedAssemblyPath, FileMode.Create,
-                        FileAccess.Write);
-                    stream.CopyTo(file);
-                }
-            }
-            else
-            {
-                using var file = new FileStream(Paths.PublicizedAssemblyPath, FileMode.CreateNew, FileAccess.Write);
-                stream.CopyTo(file);
-            }
-        }
-        catch (UnauthorizedAccessException) // If the file is hidden, delete it and try again
-        {
-            File.Delete(Paths.PublicizedAssemblyPath);
-            using var stream =
-                NeoModLoaderAssembly.GetManifestResourceStream(
-                    InternalResourcesGetter.Resource + ".assemblies.Assembly-CSharp-Publicized.dll");
-            using var file = new FileStream(Paths.PublicizedAssemblyPath, FileMode.CreateNew, FileAccess.Write);
-            stream.CopyTo(file);
-        }
         foreach (var file_full_path in Directory.GetFiles(Paths.NMLAssembliesPath, "*.dll"))
         {
             try
