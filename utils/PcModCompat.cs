@@ -37,9 +37,34 @@ public static class PcModCompat
     /// <summary>Builds the Il2Cpp type array that Il2Cpp constructors take instead of a params Type[].</summary>
     public static Il2CppReferenceArray<Il2CppSystem.Type> T(params Type[] pTypes)
     {
+        // Building the array from a managed one: allocating by length and then writing elements does not
+        // give a usable il2cpp array here (the length reads back as zero).
         int count = pTypes?.Length ?? 0;
-        var result = new Il2CppReferenceArray<Il2CppSystem.Type>(count);
-        for (int i = 0; i < count; i++) result[i] = Il2CppType.From(pTypes[i]);
-        return result;
+        var types = new Il2CppSystem.Type[count];
+        for (int i = 0; i < count; i++) types[i] = Il2CppType.From(pTypes[i]);
+        return new Il2CppReferenceArray<Il2CppSystem.Type>(types);
+    }
+
+    private static readonly System.Random _random = new();
+
+    /// <summary>
+    ///     Random numbers that work on Android. UnityEngine.Random is an engine call the game's build strips,
+    ///     so mods calling it get an exception instead of a number.
+    /// </summary>
+    public static float RandomValue()
+    {
+        lock (_random) return (float)_random.NextDouble();
+    }
+
+    /// <summary>Random float in [pMin, pMax), see <see cref="RandomValue" />.</summary>
+    public static float RandomRange(float pMin, float pMax)
+    {
+        return pMin + RandomValue() * (pMax - pMin);
+    }
+
+    /// <summary>Random int in [pMin, pMax), see <see cref="RandomValue" />.</summary>
+    public static int RandomRange(int pMin, int pMax)
+    {
+        lock (_random) return _random.Next(pMin, pMax);
     }
 }
