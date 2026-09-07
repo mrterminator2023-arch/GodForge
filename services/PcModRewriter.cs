@@ -195,6 +195,19 @@ internal static class PcModRewriter
                 return (span, $"NeoModLoader.AndroidCompatibilityModule.IL2CPPHelper.C<{target}>({original})");
             }
 
+            // foreach over a game collection: Il2Cpp enumerators do not satisfy C#'s foreach pattern, so the
+            // sequence is bridged to a managed one first.
+            case "CS0202":
+            case "CS0117":
+            {
+                var loop = root.FindNode(pDiagnostic.Location.SourceSpan)
+                               .FirstAncestorOrSelf<ForEachStatementSyntax>();
+                if (loop == null) return null;
+                string sequence = loop.Expression.ToString();
+                if (sequence.EndsWith(".AsManaged()")) return null;
+                return (loop.Expression.Span, $"({sequence}).AsManaged()");
+            }
+
             // Il2Cpp APIs return the base Object where the PC loader returned the concrete type.
             case "CS0266":
             {

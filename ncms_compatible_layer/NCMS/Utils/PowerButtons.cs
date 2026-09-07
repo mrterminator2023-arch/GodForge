@@ -18,9 +18,9 @@ namespace NCMS.Utils
         public static Dictionary<string, PowerButton> CustomButtons = new Dictionary<string, PowerButton>();
         public static Dictionary<string, bool> ToggleValues = new();
         
+        // No default for the callback here: with one on both overloads every call that omits it is ambiguous.
         public static PowerButton CreateButton(string name, Sprite sprite, string title, string description,
-            Vector2 position, ButtonType type = ButtonType.Click,
-            Transform parent = null, Action call = null)
+            Vector2 position, ButtonType type, Transform parent, Action call)
         {
            return CreateButton(name, sprite, title, description, position, type, parent, C<UnityAction>(call));
         }
