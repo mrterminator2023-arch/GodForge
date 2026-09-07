@@ -67,4 +67,26 @@ public static class PcModCompat
     {
         lock (_random) return _random.Next(pMin, pMax);
     }
+
+    /// <summary>
+    ///     Applies a mod's Harmony patches one class at a time. Harmony.PatchAll aborts on the first patch whose
+    ///     target method no longer exists in the game, which kills the whole mod; here such a class is skipped
+    ///     and reported, and the rest of the mod still works.
+    /// </summary>
+    public static void PatchAllSafely(HarmonyLib.Harmony pHarmony, System.Reflection.Assembly pAssembly = null)
+    {
+        pAssembly ??= System.Reflection.Assembly.GetCallingAssembly();
+        foreach (Type type in pAssembly.GetTypes())
+        {
+            try
+            {
+                pHarmony.CreateClassProcessor(type).Patch();
+            }
+            catch (Exception e)
+            {
+                NeoModLoader.services.LogService.LogWarning(
+                    $"Patch class {type.Name} skipped: {e.InnerException?.Message ?? e.Message}");
+            }
+        }
+    }
 }
