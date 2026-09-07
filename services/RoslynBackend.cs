@@ -308,6 +308,13 @@ internal sealed class RoslynBackend : ICompilerBackend
         }
         default_ref_path_list.AddRange(Directory.GetFiles(Paths.ManagedPath, "*.dll"));
         default_ref_path_list.Add(Paths.NMLModPath);
+        // Files can land on the device with a zero length (interrupted copy); Roslyn then fails the whole
+        // compilation with CS0009 and every mod stops building, so drop them and say which ones.
+        var unusable = default_ref_path_list.Where(f => new FileInfo(f).Length == 0).ToList();
+        foreach (string file in unusable)
+            LogService.LogWarning($"Reference {Path.GetFileName(file)} is empty on disk and will be ignored");
+        default_ref_path_list.RemoveAll(f => unusable.Contains(f));
+
         _default_ref_path = default_ref_path_list.ToArray();
 
         _default_ref = new MetadataReference[_default_ref_path.Length];

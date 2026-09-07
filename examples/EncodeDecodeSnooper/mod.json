@@ -1,0 +1,6 @@
+{
+  "Name": "EncodeDecodeSnooper",
+  "Author": "debug",
+  "Description": "Hook and log encode/decode methods to understand the algorithm",
+  "Version": "0.1.0"
+}

@@ -163,6 +163,8 @@
   <ItemGroup>
     <!-- Example mods are built by tools/build_mod.sh against the loader, not compiled into it. -->
     <Compile Remove="examples/**" />
+    <Compile Remove="ports/**" />
+    <None Remove="ports/**" />
     <None Remove="examples/**" />
   </ItemGroup>
 </Project>
