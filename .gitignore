@@ -21,3 +21,5 @@ examples/HelloMod/*.pdb
 bin/
 obj/
 out/
+ports/*/**/bin/
+ports/*/**/obj/
