@@ -175,6 +175,13 @@ public static class ModCompileLoadService
 
                 ModInfoUtils.clearModCompileTimestamp(mod.UID);
             }
+            catch (Exception e)
+            {
+                // Any other failure (a prebuilt mod referencing an assembly that no longer exists, a bad type
+                // registration) must not abort the loop: the remaining mods still get their chance to load.
+                LogService.LogError($"Mod {mod.Name} ({mod.UID}) failed to load and was skipped: {e.GetType().Name}: {e.Message}");
+                WorldBoxMod.AllRecognizedMods[mod] = ModState.FAILED;
+            }
         }
     }
 

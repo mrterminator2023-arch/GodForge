@@ -228,8 +228,9 @@ public class WorldBoxMod : BaseBehaviour
             }
             catch (Exception e)
             {
-                LogService.LogError($"Step '{pId}' failed");
-                LogService.LogException(e);
+                // Write the reason into our own log: Debug.LogException goes to Unity's logcat sink, which is
+                // not readable on this device, so the failure would otherwise be invisible.
+                LogService.LogError($"Step '{pId}' failed: {e.GetType().Name}: {e.Message}\n{e.StackTrace}");
             }
         }, pId);
     }
