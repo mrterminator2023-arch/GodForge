@@ -20,3 +20,9 @@ The entry type is `GodForge.WorldBoxMod`; MelonLoader's WorldBox compatibility l
 ## Install (Android)
 - Copy `GodForge.dll` to `MelonLoader/com.mkarpenko.worldbox/Mods/GodForge.dll` (remove `NeoModLoader.dll` and `mods/NeoModLoader.AutoUpdate_mobile_memload.dll` if present).
 - Put mods into `NMLMods/<ModName>/` with `mod.json` and `<GUID>.dll`. Building a mod: `tools/build_mod.sh <mod_dir>`; example: `examples/HelloMod`.
+
+## Target game version
+
+**WorldBox 0.51.2 (Unity 2022.3.60f1) — the only supported version.** Do not build against 0.51.4.
+Game sources: `~/IDK/wbandroid/orig_0512/`. Build the APK with `ORIG_DIR=orig_0512 /usr/bin/python3 patch.py`.
+Export map: `mapping/real2obf_0.51.2.json`.
