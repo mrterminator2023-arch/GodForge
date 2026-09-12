@@ -72,7 +72,7 @@ public class ModListWindow : AbstractListWindow<ModListWindow, IMod>
 
         UiSkin.Img("Logo", bar.transform, InternalResourcesGetter.GetIcon(), Color.white, new Vector2(-93, 0),
             new Vector2(11, 11));
-        UiSkin.Txt("Title", bar.transform, $"<b>{Branding.Name}</b>", 7, UiSkin.TextPrimary, new Vector2(-45, 0),
+        UiSkin.Txt("Title", bar.transform, $"<b>{Branding.Name}</b> <color=#ffb347><size=5>BETA</size></color>", 7, UiSkin.TextPrimary, new Vector2(-45, 0),
             new Vector2(80, 14));
         _header_counts = UiSkin.Txt("Counts", bar.transform, "", 6, UiSkin.TextSecondary, new Vector2(45, 0),
             new Vector2(100, 14), TextAnchor.MiddleRight);

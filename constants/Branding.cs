@@ -12,7 +12,7 @@ public static class Branding
     public const string ShortName = "GFML";
 
     /// <summary>Human readable version</summary>
-    public const string Version = "0.1.0";
+    public const string Version = "0.1.0-beta";
 
     /// <summary>Root of embedded manifest resources (RootNamespace + ".resources")</summary>
     public const string ResourceRoot = "GodForge.resources";
@@ -28,7 +28,8 @@ public static class Branding
 
     /// <summary>Text shown in the About window</summary>
     public const string AboutText =
-        Name + " (" + ShortName + ") v" + Version + " - WorldBox Mod Loader for Android\n\n" +
+        Name + " (" + ShortName + ") v" + Version + " - WorldBox Mod Loader for Android\n" +
+        "BETA: expect bugs. Mods may break or crash the game.\n\n" +
         Name + " is built upon NeoModLoader / AndroidModLoader by WorldBoxOpenMods (MIT). " +
         "We learned a great deal from their code and are grateful to its authors.\n\n" +
         "See CREDITS.md and LICENSE-NeoModLoader shipped with " + Name + ".";
