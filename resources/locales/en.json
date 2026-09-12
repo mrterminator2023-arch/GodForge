@@ -28,7 +28,5 @@
   "gfml_state_failed": "Failed",
   "gfml_pending_on": "On after restart",
   "gfml_pending_off": "Off after restart",
-  "gfml_safe_mode": "Safe mode: mods off after a crash",
-  "gfml_unlock_mods": "Unlock mods (crash lock)",
-  "gfml_unlock_done": "Unlocked. Mods load on next start"
+  "gfml_safe_mode": "Crash detected: all mods switched off. Enable the ones you need."
 }

@@ -1,3 +1,4 @@
+using System.Linq;
 using System;
 #if !IL2CPP
 extern alias unixsteamwork;
@@ -212,6 +213,13 @@ internal static class ModInfoUtils
             recognized_mods.Add(recognized_mod);
         }
 
+        // Two crashed launches in a row: everything goes off, the player switches back what they trust.
+        CrashGuard.DisableAllMods(recognized_mods.Select(m => m.UID));
+        if (CrashGuard.DisabledAllThisSession)
+            foreach (ModDeclare m in recognized_mods)
+                if (WorldBoxMod.AllRecognizedMods[m] != ModState.LOADED)
+                    WorldBoxMod.AllRecognizedMods[m] = ModState.DISABLED;
+
         return recognized_mods;
     }
 
@@ -331,8 +339,6 @@ internal static class ModInfoUtils
 
     public static bool isModDisabled(string pModUID)
     {
-        // In safe mode nothing is loaded, so a crashing mod cannot keep the game from starting again.
-        if (CrashGuard.SafeMode) return true;
         return mod_compilation_caches.TryGetValue(pModUID, out ModCompilationCache cache) && cache.disabled;
     }
 

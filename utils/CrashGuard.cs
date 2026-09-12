@@ -22,8 +22,22 @@ public static class CrashGuard
     private static float _elapsed;
     private static bool _armed;
 
-    /// <summary>True when the previous launches crashed and mods are being skipped this time.</summary>
+    /// <summary>True when the previous launches crashed: every mod gets switched off, the player re-enables what they want.</summary>
     public static bool SafeMode { get; private set; }
+
+    /// <summary>Set for this session once the guard has switched all mods off, so the list can say why.</summary>
+    public static bool DisabledAllThisSession { get; private set; }
+
+    /// <summary>Switches every known mod off and clears the crash record; called once mods are discovered.</summary>
+    public static void DisableAllMods(IEnumerable<string> pModUids)
+    {
+        if (!SafeMode) return;
+        foreach (string uid in pModUids) ModInfoUtils.setModDisabled(uid, true, false);
+        ModInfoUtils.SaveModRecords();
+        SafeMode = false;                 // toggles work again: the player decides what to turn back on
+        DisabledAllThisSession = true;
+        Write(0);
+    }
 
     /// <summary>Mods disabled by the guard, shown in the mod list so the player knows what happened.</summary>
     public static List<string> DisabledByGuard { get; } = new();
