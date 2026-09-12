@@ -380,7 +380,9 @@ internal static class ModInfoUtils
         }
 
         cache.disabled = pDisabled;
-        cache.timestamp = getModNewestUpdateTimestamp(pModDeclare.FolderPath);
+        // Record WHEN the mod was compiled. The recompile check compares this against the newest source file
+        // plus a grace period; storing the source time here (as upstream did) made every start recompile.
+        cache.timestamp = DateTime.UtcNow.Ticks;
 
         mod_compilation_caches[pModDeclare.UID] = cache;
         if (pSave)
