@@ -23,6 +23,7 @@ public class ModListWindow : AbstractListWindow<ModListWindow, IMod>
 
     private Text _header_counts;
     private GameObject _empty_state;
+    private GameObject _unlock_button;
     private Text _empty_hint;
 
     private void Update()
@@ -125,6 +126,22 @@ public class ModListWindow : AbstractListWindow<ModListWindow, IMod>
         {
             about_panel.gameObject.SetActive(!about_panel.gameObject.activeSelf);
         });
+
+        // "Unlock mods" button: after two crashed launches the guard starts the game without mods; this
+        // lets the player lift that once the faulty mod is removed, without digging through files.
+        Image unlock = UiSkin.Rect("UnlockButton", BackgroundTransform, 6, UiSkin.A(UiSkin.Red, 0.35f),
+            new Vector2(0, y + 16), new Vector2(110, 12), true, typeof(Button));
+        unlock.transform.SetAsLastSibling();
+        UiSkin.Txt("Label", unlock.transform, LM.Get("gfml_unlock_mods"), 5, UiSkin.TextPrimary,
+            Vector2.zero, new Vector2(108, 12), TextAnchor.MiddleCenter);
+        unlock.GetComponent<Button>().onClick.AddListener(() =>
+        {
+            CrashGuard.Reset();
+            _unlock_button.SetActive(false);
+            if (_header_counts != null) _header_counts.text = UiSkin.Col(LM.Get("gfml_unlock_done"), UiSkin.Green);
+        });
+        _unlock_button = unlock.gameObject;
+        _unlock_button.SetActive(false);
     }
 
     // ---- data ----------------------------------------------------------------------------------------------
@@ -173,6 +190,7 @@ public class ModListWindow : AbstractListWindow<ModListWindow, IMod>
             if (CrashGuard.SafeMode) s = UiSkin.Col(LM.Get("gfml_safe_mode"), UiSkin.Red);
             _header_counts.text = s;
         }
+        if (_unlock_button != null) _unlock_button.SetActive(CrashGuard.SafeMode);
 
         if (_empty_state != null)
         {
