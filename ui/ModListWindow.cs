@@ -170,15 +170,13 @@ public class ModListWindow : AbstractListWindow<ModListWindow, IMod>
             string s = UiSkin.Col("●", UiSkin.Green) + enabled + "   " + UiSkin.Col("●", UiSkin.Gray) + disabled;
             if (failed > 0) s += "   " + UiSkin.Col("●", UiSkin.Red) + failed;
             // Tell the player why nothing is loaded after a crash, instead of leaving an empty list.
-            if (CrashGuard.DisabledAllThisSession) s = UiSkin.Col(LM.Get("gfml_safe_mode"), UiSkin.Red);
             _header_counts.text = s;
         }
 
         if (_empty_state != null)
         {
             _empty_state.SetActive(total == 0);
-            if (total == 0 && _empty_hint != null)
-                _empty_hint.text = LM.Get("gfml_no_mods_hint") + "\n" + UiSkin.Col(Paths.UserModsPath, UiSkin.Accent);
+            if (total == 0 && _empty_hint != null) _empty_hint.text = "";
         }
     }
 
