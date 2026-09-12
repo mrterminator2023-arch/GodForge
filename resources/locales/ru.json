@@ -19,5 +19,6 @@
   "gfml_state_disabled": "Выключен",
   "gfml_state_failed": "Ошибка",
   "gfml_pending_on": "Вкл. после перезапуска",
-  "gfml_pending_off": "Выкл. после перезапуска"
+  "gfml_pending_off": "Выкл. после перезапуска",
+  "gfml_crash_off": "Моды выключены из-за краша"
 }
