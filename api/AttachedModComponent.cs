@@ -23,7 +23,7 @@ public class AttachedModComponent : WrappedBehaviour, IMod
 
     public string GetUrl()
     {
-        return string.IsNullOrEmpty(_declare.RepoUrl) ? CoreConstants.OrgURL : _declare.RepoUrl;
+        return _declare.RepoUrl;   // no fallback: a mod without its own link gets no website button
     }
 
     public void OnLoad(ModDeclare pModDecl, GameObject pGameObject)

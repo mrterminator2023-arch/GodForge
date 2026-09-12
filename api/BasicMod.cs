@@ -92,7 +92,7 @@ public abstract class BasicMod<T> : WrappedBehaviour, IMod, ILocalizable, IConfi
     /// </summary>
     public virtual string GetUrl()
     {
-        return string.IsNullOrEmpty(_declare.RepoUrl) ? CoreConstants.OrgURL : _declare.RepoUrl;
+        return _declare.RepoUrl;   // no fallback: a mod without its own link gets no website button
     }
 
     /// <summary>
