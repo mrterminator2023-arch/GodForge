@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Idel Nigmatullin and GodForge contributors
 # Build a GodForge mod on the Mac into a precompiled <GUID>.dll placed next to its mod.json.
 # Usage: tools/build_mod.sh <mod_dir> [Il2CppAssemblies dir]
 #   Il2CppAssemblies dir defaults to $IL2CPP_DIR, then /tmp/il2cppasm_fixed, then

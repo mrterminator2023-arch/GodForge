@@ -1,4 +1,6 @@
 #!/bin/bash
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Idel Nigmatullin and GodForge contributors
 # Build GodForge.dll, assemble the optional compiler pack and the HelloMod example into out/.
 set -euo pipefail
 ROOT=$(cd "$(dirname "$0")/.." && pwd)

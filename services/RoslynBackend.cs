@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Idel Nigmatullin and GodForge contributors
+// This file is part of GodForge (GFML). See LICENSE for details.
+
 using System.IO.Compression;
 using System.Reflection;
 using System.Text;
@@ -32,30 +36,53 @@ internal sealed class RoslynBackend : ICompilerBackend
 {
     private string[] _default_ref_path = null!;
     private readonly Dictionary<string, string> mod_inc_path = new();
-    private readonly HashSet<string> _loaded_ref = new();
 
     private MetadataReference[] _default_ref = null!;
     private MetadataReference _publicized_assembly_ref = null!;
-    private readonly Dictionary<string, MetadataReference> mod_ref = new();
+    // Mod dll paths keyed by UID; the MetadataReference (which reads the whole file into memory) is only
+    // built when a source mod actually compiles against it.
+    private readonly Dictionary<string, string> mod_ref_path = new();
+    private readonly Dictionary<string, MetadataReference> mod_ref_cache = new();
 
-    private bool compileMod(ModDeclare pModDecl, IEnumerable<MetadataReference> pDefaultInc,
-        string[] pAddInc, Dictionary<string, MetadataReference> pModInc, out string pCompileErrors, bool pForce = false,
+    private MetadataReference GetModRef(string pUid)
+    {
+        if (mod_ref_cache.TryGetValue(pUid, out var cached)) return cached;
+        if (!mod_ref_path.TryGetValue(pUid, out var path)) return null;
+        try
+        {
+            cached = MetadataReference.CreateFromFile(path);
+        }
+        catch (Exception e)
+        {
+            LogService.LogError($"Cannot read reference {path} for {pUid}: {e.Message}");
+            cached = null;
+        }
+        mod_ref_cache[pUid] = cached;
+        return cached;
+    }
+
+    private bool compileMod(ModDeclare pModDecl,
+        string[] pAddInc, out string pCompileErrors, bool pForce = false,
         bool pDisableOptionalDepen = false)
     {
         pCompileErrors = string.Empty;
         var available_optional_depens = pDisableOptionalDepen
             ? new List<string>()
-            : pModDecl.OptionalDependencies.Where(pModInc.ContainsKey).ToList();
-        var available_depens = pModDecl.Dependencies.Where(pModInc.ContainsKey).ToList();
+            : pModDecl.OptionalDependencies.Where(mod_ref_path.ContainsKey).ToList();
+        var available_depens = pModDecl.Dependencies.Where(mod_ref_path.ContainsKey).ToList();
         if (!pForce && !ModInfoUtils.doesModNeedRecompile(pModDecl, available_depens, available_optional_depens))
         {
             LoadAddInc();
             return true;
         }
 
+        // Only now is Roslyn really needed: reading every game/engine assembly costs seconds and a lot of
+        // memory on a phone, so it is deferred until a mod must be rebuilt.
+        EnsureDefaultReferences();
+
         var preprocessor_symbols = new List<string>();
 
-        List<MetadataReference> list = pDefaultInc.ToList();
+        List<MetadataReference> list = _default_ref.Where(r => r != null).ToList();
         list.AddRange(pAddInc.Select(inc => MetadataReference.CreateFromFile(inc)));
         LoadAddInc();
         if (pModDecl.UsePublicizedAssembly && !Config.isAndroid)
@@ -65,20 +92,25 @@ internal sealed class RoslynBackend : ICompilerBackend
 
         foreach (var depen in available_depens)
         {
-            list.Add(pModInc[depen]);
-
-            if (pModInc[depen] != null) continue;
-            LogService.LogError($"{pModDecl.UID}'s optional ref of {depen} instance is null");
-            return false;
+            var reference = GetModRef(depen);
+            if (reference == null)
+            {
+                LogService.LogError($"{pModDecl.UID}'s ref of {depen} instance is null");
+                return false;
+            }
+            list.Add(reference);
         }
 
         foreach (var option_depen in available_optional_depens)
         {
-            list.Add(pModInc[option_depen]);
+            var reference = GetModRef(option_depen);
             preprocessor_symbols.Add(ModDependencyUtils.ParseDepenNameToPreprocessSymbol(option_depen));
-            if (pModInc[option_depen] != null) continue;
-            LogService.LogError($"{pModDecl.UID}'s optional ref of {option_depen} instance is null");
-            return false;
+            if (reference == null)
+            {
+                LogService.LogError($"{pModDecl.UID}'s optional ref of {option_depen} instance is null");
+                return false;
+            }
+            list.Add(reference);
         }
 
         var syntaxTrees = new List<SyntaxTree>();
@@ -153,31 +185,7 @@ internal sealed class RoslynBackend : ICompilerBackend
 
         pModDecl.IsNCMSMod = is_ncms_mod;
 
-        void LoadAddInc()
-        {
-            foreach (var inc in pAddInc)
-            {
-                string file_name = Path.GetFileName(inc);
-                if (file_name == "Assembly-CSharp.dll" && !Config.isAndroid)
-                {
-                    continue;
-                }
-
-                if (_loaded_ref.Contains(file_name)) continue;
-                _loaded_ref.Add(file_name);
-                try
-                {
-                    var loaded_inc = Assembly.LoadFrom(inc);
-                    LogService.LogInfo($"Load {loaded_inc.FullName}");
-                }
-                catch (Exception e)
-                {
-                    LogService.LogWarning($"Failed to load Assembly {file_name} for mod {pModDecl.UID}");
-                    LogService.LogWarning(e.Message);
-                    LogService.LogWarning(e.StackTrace);
-                }
-            }
-        }
+        void LoadAddInc() => ModCompileLoadService.LoadAdditionAssemblies(pAddInc, pModDecl.UID);
 
 
         var identity = new AssemblyIdentity(
@@ -285,11 +293,20 @@ internal sealed class RoslynBackend : ICompilerBackend
             mod_inc_path[mod_node.mod_decl.UID] =
                 Path.Combine(Paths.CompiledModsPath, $"{mod_node.mod_decl.UID}.dll");
         }
-
-        EnsureDefaultReferences();
+        // Default references are built lazily by the first real compilation (see compileMod).
     }
 
     public bool IsPrepared => _default_ref != null;
+
+    public void ReleaseReferences()
+    {
+        if (_default_ref == null && mod_ref_cache.Count == 0) return;
+        _default_ref = null!;
+        _default_ref_path = null!;
+        _publicized_assembly_ref = null!;
+        mod_ref_cache.Clear();
+        LogService.LogInfo("Compiler references released");
+    }
 
     /// <summary>
     /// Build the default reference set (game, MelonLoader, Il2Cpp assemblies, GodForge itself). Idempotent.
@@ -360,24 +377,23 @@ internal sealed class RoslynBackend : ICompilerBackend
     /// </summary>
     public void RegisterPrecompiled(string pUid, string pMainDll)
     {
-        mod_ref[pUid] = MetadataReference.CreateFromFile(pMainDll);
+        mod_ref_path[pUid] = pMainDll;
+        mod_ref_cache.Remove(pUid);
     }
 
     public bool CompileNode(ModDependencyNode pModNode, bool pForce = false)
     {
-        EnsureDefaultReferences();
         bool compile_result;
-        bool has_available_optional_depen = pModNode.mod_decl.OptionalDependencies.Any(mod_ref.ContainsKey);
+        bool has_available_optional_depen = pModNode.mod_decl.OptionalDependencies.Any(mod_ref_path.ContainsKey);
         string compile_errors;
         compile_result =
-            compileMod(pModNode.mod_decl, _default_ref,
-                pModNode.GetAdditionReferences().ToArray(), mod_ref, out compile_errors, pForce
+            compileMod(pModNode.mod_decl,
+                pModNode.GetAdditionReferences().ToArray(), out compile_errors, pForce
             );
         if (compile_result)
         {
-            mod_ref[pModNode.mod_decl.UID] =
-                MetadataReference.CreateFromFile(Path.Combine(Paths.CompiledModsPath,
-                    $"{pModNode.mod_decl.UID}.dll"));
+            RegisterPrecompiled(pModNode.mod_decl.UID,
+                Path.Combine(Paths.CompiledModsPath, $"{pModNode.mod_decl.UID}.dll"));
         }
         else if (has_available_optional_depen)
         {
@@ -385,15 +401,14 @@ internal sealed class RoslynBackend : ICompilerBackend
                 $"Cannot compile mod {pModNode.mod_decl.UID} with Optional Dependencies, try to disable them");
             string compile_errors_without_optional_depen;
             compile_result =
-                compileMod(pModNode.mod_decl, _default_ref,
-                    pModNode.GetAdditionReferences(false).ToArray(), mod_ref, out compile_errors_without_optional_depen,
+                compileMod(pModNode.mod_decl,
+                    pModNode.GetAdditionReferences(false).ToArray(), out compile_errors_without_optional_depen,
                     pForce, true
                 );
             if (compile_result)
             {
-                mod_ref[pModNode.mod_decl.UID] =
-                    MetadataReference.CreateFromFile(Path.Combine(Paths.CompiledModsPath,
-                        $"{pModNode.mod_decl.UID}.dll"));
+                RegisterPrecompiled(pModNode.mod_decl.UID,
+                    Path.Combine(Paths.CompiledModsPath, $"{pModNode.mod_decl.UID}.dll"));
                 LogCompileFailureWithOptionalDependencies(pModNode.mod_decl.UID, compile_errors);
             }
             else

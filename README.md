@@ -4,6 +4,18 @@
 GodForge is a trimmed, rebranded fork of [AndroidModLoader](https://github.com/WorldBoxOpenMods/AndroidModLoader)
 (the mobile branch of NeoModLoader by WorldBoxOpenMods, MIT). See `CREDITS.md` and `LICENSE-NeoModLoader`.
 
+## Official sources
+The only genuine GodForge builds are published on the official channel (see `Branding.Homepage`).
+Every release comes with a SHA-256 checksum (`tools/release_checksums.sh`); verify the APK before installing.
+Builds from anywhere else are unofficial and may be modified.
+
+## License
+- GodForge is **free software under GPL-3.0-or-later** (`LICENSE`). You may use, study, modify and redistribute it,
+  but any derivative must be released under the same license with its source code available.
+- Code inherited from NeoModLoader / AndroidModLoader stays under MIT (`LICENSE-NeoModLoader`).
+- The **name "GodForge" / "GFML" and the logo are not covered by the license** (`NOTICE`). Forks must pick their own
+  name and artwork and must not present themselves as official GodForge builds.
+
 ## What changed compared to NeoModLoader mobile
 - Removed: auto-update, Steam Workshop, GitHub/Discord authentication, BepInEx bridge, gamebanana installer, mod hot-reload.
 - Crash fixes for WorldBox 0.51.4 (SpriteAtlas fallback whitelist, Il2CPPBehaviour null guards, isolated init steps, locale resource prefix).

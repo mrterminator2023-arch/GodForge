@@ -23,3 +23,8 @@ obj/
 out/
 ports/*/**/bin/
 ports/*/**/obj/
+
+# not published: third-party mod ports and local experiments
+ports/
+examples/Premium*
+examples/TestPremium/

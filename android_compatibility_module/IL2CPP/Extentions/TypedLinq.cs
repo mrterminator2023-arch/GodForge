@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Idel Nigmatullin and GodForge contributors
+// This file is part of GodForge (GFML). See LICENSE for details.
+
 using System;
 using System.Collections.Generic;
 using Il2CppInterop.Runtime.InteropTypes;

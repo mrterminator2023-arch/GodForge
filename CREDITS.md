@@ -1,5 +1,7 @@
 # Credits
 
+GodForge (GFML) is developed by Idel Nigmatullin. Licensed under GPL-3.0-or-later (see `LICENSE`, `NOTICE`).
+
 GodForge is built upon NeoModLoader / AndroidModLoader by WorldBoxOpenMods (MIT).
 We learned a great deal from their code and are grateful to its authors.
 

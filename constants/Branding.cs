@@ -1,3 +1,7 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 Idel Nigmatullin and GodForge contributors
+// This file is part of GodForge (GFML). See LICENSE for details.
+
 namespace NeoModLoader.constants;
 
 /// <summary>
@@ -13,6 +17,21 @@ public static class Branding
 
     /// <summary>Human readable version</summary>
     public const string Version = "0.1.0-beta";
+
+    /// <summary>Project author (shown in About and the startup log)</summary>
+    public const string Author = "Idel Nigmatullin";
+
+    /// <summary>License of the loader</summary>
+    public const string License = "GPL-3.0-or-later";
+
+    /// <summary>Official channel / homepage</summary>
+    public const string Homepage = "https://t.me/GodForgeHub";
+
+    /// <summary>Official source repository. TODO: fill in the real URL before release.</summary>
+    public const string Repository = "https://github.com/godforge-ml/GodForge";
+
+    /// <summary>One-line identification string for logs</summary>
+    public const string Signature = Name + " (" + ShortName + ") v" + Version + " by " + Author + " - " + License + " - " + Homepage;
 
     /// <summary>Root of embedded manifest resources (RootNamespace + ".resources")</summary>
     public const string ResourceRoot = "GodForge.resources";
@@ -30,6 +49,9 @@ public static class Branding
     public const string AboutText =
         Name + " (" + ShortName + ") v" + Version + " - WorldBox Mod Loader for Android\n" +
         "BETA: expect bugs. Mods may break or crash the game.\n\n" +
+        "Author: " + Author + "\nLicense: " + License + " (free software, source available)\n" +
+        "Official channel: " + Homepage + "\nSource: " + Repository + "\n" +
+        "Only builds from the official channel are genuine. The GodForge name and logo may not be used by forks.\n\n" +
         Name + " is built upon NeoModLoader / AndroidModLoader by WorldBoxOpenMods (MIT). " +
         "We learned a great deal from their code and are grateful to its authors.\n\n" +
         "See CREDITS.md and LICENSE-NeoModLoader shipped with " + Name + ".";

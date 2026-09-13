@@ -1,0 +1,11 @@
+GodForge (GFML) - WorldBox Mod Loader for Android
+Copyright (C) 2026 Idel Nigmatullin and GodForge contributors
+Licensed under GPL-3.0-or-later (see LICENSE).
+
+The name "GodForge", the short name "GFML", and the GodForge logo/artwork
+(branding/) are the property of the project author and are NOT covered by
+the GPL. Forks and redistributions must use a different name and logo, and
+must not present themselves as official GodForge builds.
+
+Based on NeoModLoader / AndroidModLoader by WorldBoxOpenMods (MIT) -
+see LICENSE-NeoModLoader and CREDITS.md.

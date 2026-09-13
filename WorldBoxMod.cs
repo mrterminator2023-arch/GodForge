@@ -90,7 +90,7 @@ public class WorldBoxMod : BaseBehaviour
             UnityExplorerFix();
         }
         fileSystemInitialize();
-        LogService.LogInfo($"{Branding.Name} v{Branding.Version} (commit {InternalResourcesGetter.GetCommit()})");
+        LogService.LogInfo($"{Branding.Signature} (commit {InternalResourcesGetter.GetCommit()})");
     }
     private void Update()
     {
@@ -153,6 +153,9 @@ public class WorldBoxMod : BaseBehaviour
                     }
                 }, "Compile Mod " + mod.mod_decl.Name);
             }
+            // Everything is compiled by now; free the reference images Roslyn prefetched (they are rebuilt on
+            // demand if a mod is compiled later at runtime).
+            SmoothLoaderHelper.add(ModCompiler.ReleaseReferences, "Release Compiler References");
             AssetLinker Linker = new();
             foreach (var mod in mod_nodes)
             {
