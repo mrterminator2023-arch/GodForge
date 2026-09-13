@@ -74,15 +74,19 @@ public static class ResourcesPatch
             LogService.LogWarning($"SpriteAtlas unavailable ({e.GetType().Name}: {e.Message}), using sprite whitelist fallback");
             try
             {
+                // Every loaded sprite costs a name marshal here (thousands on a full game); stop as soon as
+                // the whole whitelist is found.
                 var wanted = new HashSet<string>(UiSpriteWhitelist);
                 foreach (var sprite in Resources.FindObjectsOfTypeAll<Sprite>())
                 {
                     if (sprite == null) continue;
-                    string name = sprite.name.Replace("(Clone)", "");
+                    string name = sprite.name;
+                    if (name.EndsWith("(Clone)")) name = name.Replace("(Clone)", "");
                     if (!wanted.Contains(name)) continue;
                     if (sprite.texture == null) continue; // unloaded/atlas-only sprite would render white
-                    if (tree.direct_objects.ContainsKey($"ui/special/{name}".ToLower())) continue;
                     tree.Add($"ui/special/{name}", sprite);
+                    wanted.Remove(name);
+                    if (wanted.Count == 0) break;
                 }
             }
             catch (Exception e2)
@@ -207,10 +211,15 @@ public static class ResourcesPatch
     })]
    private static void LoadAll_Postfix(ref ObjectArray __result, string path, SysType systemTypeInstance)
    {
-       if (tree == null) return;
+       if (tree == null || tree.IsEmpty) return;
+       if (tree.IsKnownMiss(path)) return;
 
        ResourceTreeNode node = tree.Find(path);
-       if (node == null) return;
+       if (node == null)
+       {
+           tree.RememberMiss(path);
+           return;
+       }
 
        List<Object> append_list = node.GetAllObjects(systemTypeInstance);
        if (append_list.Count == 0) return;
@@ -258,9 +267,17 @@ public static class ResourcesPatch
     private static Object Load_Postfix(Object __result, string path,
         SysType systemTypeInstance)
     {
-        if (tree == null) return __result;
+        // Every Resources.Load of the game passes through here: bail out before any string work when no mod
+        // patched anything, or when this exact path already missed once.
+        if (tree == null || tree.IsEmpty) return __result;
+        if (tree.IsKnownMiss(path)) return __result;
         var new_result = tree.Get(path);
-        if (new_result != null && systemTypeInstance.IsInstanceOfType(new_result))
+        if (new_result == null)
+        {
+            tree.RememberMiss(path);
+            return __result;
+        }
+        if (systemTypeInstance.IsInstanceOfType(new_result))
             return new_result;
 
         return __result;
@@ -270,6 +287,20 @@ public static class ResourcesPatch
     {
         internal Dictionary<string, Object> direct_objects = new();
         private ResourceTreeNode root = new(null);
+
+        // Paths (case-sensitive, as the game passes them) that resolved to nothing. Cleared on every Add so a
+        // late PatchResource is still seen. Capped so a mod probing random paths cannot grow it forever.
+        private readonly HashSet<string> _misses = new();
+        private const int MaxMisses = 4096;
+
+        public bool IsEmpty => root.children.Count == 0 && root.objects.Count == 0;
+        public bool IsKnownMiss(string path) => _misses.Contains(path);
+
+        public void RememberMiss(string path)
+        {
+            if (_misses.Count >= MaxMisses) _misses.Clear();
+            _misses.Add(path);
+        }
 
         public ResourceTree()
         {
@@ -344,6 +375,7 @@ public static class ResourcesPatch
 
         public void Add(string path, Object obj)
         {
+            _misses.Clear();
             string lower_path = path.ToLower();
             direct_objects[lower_path] = obj;
             var node = Find(path, true, false);

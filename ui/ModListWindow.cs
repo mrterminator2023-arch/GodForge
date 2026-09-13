@@ -455,7 +455,12 @@ public class ModListWindow : AbstractListWindow<ModListWindow, IMod>
 
             if (_track_color != _track_target)
             {
-                _track_color = Color.Lerp(_track_color, _track_target, k);
+                // Lerp never reaches the target exactly; snap so idle cards stop writing the colour every frame.
+                Color next = Color.Lerp(_track_color, _track_target, k);
+                Color diff = next - _track_target;
+                if (Mathf.Abs(diff.r) + Mathf.Abs(diff.g) + Mathf.Abs(diff.b) + Mathf.Abs(diff.a) < 0.004f)
+                    next = _track_target;
+                _track_color = next;
                 _track.color = _track_color;
             }
 

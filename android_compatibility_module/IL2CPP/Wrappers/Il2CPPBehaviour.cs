@@ -53,7 +53,7 @@ public sealed class Il2CPPBehaviour : MonoBehaviour
     public void Update()
     {
         if (WrappedBehaviour == null) return;
-        WrappedBehaviour.HandleInvokations(Time.deltaTime);
+        if (WrappedBehaviour.HasPendingInvokations) WrappedBehaviour.HandleInvokations(Time.deltaTime);
         update?.Invoke(WrappedBehaviour);
     }
 
@@ -73,9 +73,16 @@ public sealed class Il2CPPBehaviour : MonoBehaviour
     {
         return WrappedMethodCollection.Get(WrappedType)[Method];
     }
+    /// <summary>
+    ///     How many wrappers were ever attached. Zero means no mod behaviour exists yet, so the Instantiate
+    ///     postfix (see <see cref="WrapperHelper.Resolve"/>) can return without touching the hierarchy.
+    /// </summary>
+    public static int LiveWrapperCount { [HideFromIl2Cpp] get; [HideFromIl2Cpp] private set; }
+
     [HideFromIl2Cpp]
     public B SetWrappedBehaviour<B>(B Behaviour) where B : WrappedBehaviour
     {
+        LiveWrapperCount++;
         WrappedBehaviour = Behaviour;
         WrappedType = Behaviour.GetType();
         Behaviour.Wrapper = this;

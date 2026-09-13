@@ -54,13 +54,27 @@ internal static class FMODPatches
     {
        MainLibrary.ClearSounds();
     }
+    // Six PlayerConfig lookups (each a string marshal into the game) and three FMOD calls every frame is
+    // wasted work: volume sliders change rarely. Poll them a few times per second and push only changes.
+    private const float VolumePollInterval = 0.25f;
+    private static float _volume_poll_timer;
+    private static float _last_sfx = -1f, _last_music = -1f, _last_ui = -1f;
+
     [HarmonyPostfix]
     [HarmonyPatch(typeof(RuntimeManager), "Update")]
     static void Update()
     {
-        SFXGroup.setVolume(GetVolume(SoundType.Sound));
-        MusicGroup.setVolume(GetVolume(SoundType.Music));
-        UIGroup.setVolume(GetVolume(SoundType.UI));
+        _volume_poll_timer -= Time.unscaledDeltaTime;
+        if (_volume_poll_timer <= 0f)
+        {
+            _volume_poll_timer = VolumePollInterval;
+            float sfx = GetVolume(SoundType.Sound);
+            if (sfx != _last_sfx) { _last_sfx = sfx; SFXGroup.setVolume(sfx); }
+            float music = GetVolume(SoundType.Music);
+            if (music != _last_music) { _last_music = music; MusicGroup.setVolume(music); }
+            float ui = GetVolume(SoundType.UI);
+            if (ui != _last_ui) { _last_ui = ui; UIGroup.setVolume(ui); }
+        }
         MainLibrary.Update();
     }
 }

@@ -106,10 +106,11 @@ public static class TabManager
 
         _check_timer = check_new_tabs_interval;
 
-        PowersTab[] curr_tabs = tab_container.GetComponentsInChildren<PowersTab>(true);
+        // Cheap check first: the tab scan below marshals every PowersTab once a second otherwise.
         Button[] curr_tab_entries = tab_entry_container.GetComponentsInChildren<Button>(false);
-
         if (curr_tab_entries.Length == tab_entries.Count) return;
+
+        PowersTab[] curr_tabs = tab_container.GetComponentsInChildren<PowersTab>(true);
 
         string GetTabMainPart(string name)
         {

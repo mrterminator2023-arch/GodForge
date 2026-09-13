@@ -394,7 +394,9 @@ internal static class ModInfoUtils
         List<string> pOptionalDependencies)
     {
         if (!mod_compilation_caches.TryGetValue(pModDeclare.UID, out ModCompilationCache cache)) return true;
-        if (!File.Exists(Path.Combine(Paths.CompiledModsPath, pModDeclare.UID))) return true;
+        // The compiler writes <UID>.dll; checking the bare UID (upstream) never matched, so every source mod
+        // was rebuilt on every start.
+        if (!File.Exists(Path.Combine(Paths.CompiledModsPath, pModDeclare.UID + ".dll"))) return true;
         var curr = new HashSet<string>(pDependencies);
         var last = new HashSet<string>(cache.dependencies);
 

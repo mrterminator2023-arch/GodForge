@@ -169,23 +169,42 @@ namespace NeoModLoader.AndroidCompatibilityModule
 		{
 			Resolve(original, __result);
 		}
+		// Instantiate(obj, parent, ..) ends up in Internal_InstantiateSingleWithParent, so one game call hits two
+		// of our postfixes: remember the pair resolved last in this frame and do the work once.
+		private static IntPtr _last_orig, _last_clone;
+		private static int _last_frame;
+
 		public static void Resolve(Object orig, Object clone)
 		{
+			// The game instantiates prefabs all the time (UI rows, effects, windows); only a prefab that
+			// carries a wrapped behaviour needs the field-by-field clone below. Until a single wrapper
+			// exists in the process there is nothing to resolve at all.
+			if (Il2CPPBehaviour.LiveWrapperCount == 0) return;
 			if (orig == null || clone == null)
 			{
 				return;
 			}
+
 			GameObject obj = orig.TryCast<GameObject>();
-			if (obj != null)
+			if (obj == null)
 			{
-				WrapperResolver.ResolveInstantiate(obj, clone.Cast<GameObject>());
-				return;
+				Component comp = orig.TryCast<Component>();
+				if (comp == null) return;
+				obj = comp.gameObject;
+				clone = clone.Cast<Component>().gameObject;
 			}
-			Component comp = orig.TryCast<Component>();
-			if (comp != null)
+			else
 			{
-				WrapperResolver.ResolveInstantiate(comp.gameObject, clone.Cast<Component>().gameObject);
+				clone = clone.Cast<GameObject>();
 			}
+			// One native call instead of walking every child with GetChild + GetComponent from managed code.
+			if (obj.GetComponentInChildren<Il2CPPBehaviour>(true) == null) return;
+			int frame = Time.frameCount;
+			if (frame == _last_frame && obj.Pointer == _last_orig && clone.Pointer == _last_clone) return;
+			_last_frame = frame;
+			_last_orig = obj.Pointer;
+			_last_clone = clone.Pointer;
+			WrapperResolver.ResolveInstantiate(obj, (GameObject)clone);
 		}
 		static WrappedAction CreateWrappedAction(MethodInfo method, Type type)
 		{
@@ -427,11 +446,17 @@ namespace NeoModLoader.AndroidCompatibilityModule
 				return null;
 			}
 
+			/// <summary>Stores with an armed timer; lets the per-frame caller skip this type entirely.</summary>
+			public int Pending;
+
 			public void CheckInvokations(float elapsed, WrappedBehaviour instance)
 			{
+				if (Pending == 0) return;
 				foreach (var method in Stores.Values)
 				{
 					var invokation = method.Invokation;
+					// A store created by StartCoroutine(string) or cleared by CancelInvoke has no timer.
+					if (invokation == null) continue;
 					if (invokation.Time > 0)
 					{
 						invokation.Time -= elapsed;
@@ -439,8 +464,9 @@ namespace NeoModLoader.AndroidCompatibilityModule
 					}
 					if (invokation.Rate <= 0)
 					{
-						method.Method(instance);
 						method.Invokation = null;
+						Pending--;
+						method.Method(instance);
 						continue;
 					}
 					invokation.Clock -= elapsed;
@@ -453,6 +479,8 @@ namespace NeoModLoader.AndroidCompatibilityModule
 			public void SetInvokation(string method, Invokation invokation)
 			{
 				var store = Get(method);
+				if (store.Invokation == null && invokation != null) Pending++;
+				else if (store.Invokation != null && invokation == null) Pending--;
 				store.Invokation = invokation;
 				store.Method ??= WrappedMethodCollection.Get(type)[method];
 			}
@@ -469,12 +497,24 @@ namespace NeoModLoader.AndroidCompatibilityModule
 			}
 			public void StopInvokation(string method)
 			{
-				var store = Get(method);
+				if (!Stores.TryGetValue(method, out var store)) return;
+				if (store.Invokation != null) Pending--;
 				store.Invokation = null;
 			}
 		}
 
 		Dictionary<Type, TypeStore> Stores = new();
+
+		/// <summary>Armed Invoke/InvokeRepeating timers across all types of this behaviour.</summary>
+		public int PendingCount
+		{
+			get
+			{
+				int n = 0;
+				foreach (var store in Stores.Values) n += store.Pending;
+				return n;
+			}
+		}
 
 		public void AddCoroutine(Type type, string method, Coroutine coroutine)
 		{

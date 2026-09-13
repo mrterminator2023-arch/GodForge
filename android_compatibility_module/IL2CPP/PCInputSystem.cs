@@ -354,7 +354,7 @@ public static class Helper
 
     public static bool IsPCInputSystem(this GameObject obj)
     {
-        return obj.Equals(PCInputSystem.Instance.gameObject);
+        return PCInputSystem.Instance != null && obj.Equals(PCInputSystem.Instance.gameObject);
     }
 }
 
@@ -576,8 +576,16 @@ public class PCInputSystem : WrappedBehaviour
     #endregion
     internal static void Init()
     {
-        Harmony.CreateAndPatchAll(typeof(PCInputPatches), Others.harmony_id);
         Config = PCButtonSettings.LoadFromPath(Paths.PCInputConfigPath).FromSettings();
+        // Without the overlay the editing/mouse modes are unreachable, so every Input.* hook below would
+        // only add a detour to calls the game makes dozens of times per frame (hotkeys, touchCount,
+        // mousePosition), and the OnGUI component would keep IMGUI running for nothing. Skip both.
+        if (!NeoModLoader.constants.Branding.ShowPCInputOverlay)
+        {
+            LogService.LogInfo("PC input overlay disabled: Input hooks and IMGUI component not installed");
+            return;
+        }
+        Harmony.CreateAndPatchAll(typeof(PCInputPatches), Others.harmony_id);
         Instance = new GameObject("PCInputSystem").AddComponent<PCInputSystem>();
         Object.DontDestroyOnLoad(Instance.gameObject);
         InitGUI();
@@ -668,15 +676,24 @@ public class PCInputSystem : WrappedBehaviour
     private static PCInput SelectedInput;
     void CheckInputs()
     {
+        // Input.touches marshals a fresh array on every call; fetch the positions once per pass.
+        int touch_count = Input.touchCount;
+        if (touch_count == 0)
+        {
+            foreach (var pair in Config.Inputs) pair.Value.Release();
+            return;
+        }
+        if (_touch_positions.Length < touch_count) _touch_positions = new Vector2[touch_count];
+        for (int i = 0; i < touch_count; i++)
+            _touch_positions[i] = Input.GetTouch(i).position.ToGUI();
+
         foreach (var pair in Config.Inputs)
         {
             var button = pair.Value;
             bool inside = false;
-            foreach (var Touch in Input.touches)
+            for (int i = 0; i < touch_count; i++)
             {
-                var touchPos = Touch.position.ToGUI();
-               
-                if (button.ButtonRect.Contains(touchPos))
+                if (button.ButtonRect.Contains(_touch_positions[i]))
                 {
                     inside = true;
                     break;
@@ -688,6 +705,7 @@ public class PCInputSystem : WrappedBehaviour
                 button.Release();
         }
     }
+    private static Vector2[] _touch_positions = new Vector2[4];
 
     void Update()
     {

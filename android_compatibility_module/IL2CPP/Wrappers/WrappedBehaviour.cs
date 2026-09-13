@@ -122,6 +122,8 @@ public class WrappedBehaviour
         Handler.SetInvokation(type, name, new WrappedMethodHandler.Invokation(time, -1));
     }
     private WrappedMethodHandler Handler = new();
+    /// <summary>Whether any Invoke/InvokeRepeating timer is armed; most behaviours never use them.</summary>
+    internal bool HasPendingInvokations => Handler.PendingCount > 0;
     internal void HandleInvokations(float elapsed)
     {
         Handler.CheckInvokations(elapsed, this);

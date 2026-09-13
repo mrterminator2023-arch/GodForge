@@ -77,7 +77,7 @@ public static class ModCompileLoadService
             return;
         }
 
-        if (!CompilerPack.EnsureLoaded())
+        if (!CompilerPack.IsAvailable)
         {
             foreach (var node in source_mods)
                 LogService.LogError(
@@ -85,7 +85,59 @@ public static class ModCompileLoadService
             return;
         }
 
-        ModCompiler.PrepareReferences(pModNodes);
+        // Roslyn (12 MB of IL to JIT plus every reference assembly read into memory) is loaded only when
+        // compileMod finds a source mod whose cached dll is stale; see TryUseCompileCache.
+    }
+
+    // UIDs whose dll is ready (precompiled, cache hit or freshly compiled), in load order. Mirrors what the
+    // Roslyn backend knows as available dependencies, without needing the backend.
+    private static readonly HashSet<string> _ready_mods = new();
+    private static readonly HashSet<string> _loaded_addition_assemblies = new();
+
+    /// <summary>
+    /// Load the extra dlls a mod ships in its Assemblies folder (and those of its dependencies).
+    /// </summary>
+    internal static void LoadAdditionAssemblies(IEnumerable<string> pPaths, string pModUid)
+    {
+        foreach (var inc in pPaths)
+        {
+            string file_name = Path.GetFileName(inc);
+            if (file_name == "Assembly-CSharp.dll" && !Config.isAndroid)
+            {
+                continue;
+            }
+
+            if (!_loaded_addition_assemblies.Add(file_name)) continue;
+            try
+            {
+                var loaded_inc = Assembly.LoadFrom(inc);
+                LogService.LogInfo($"Load {loaded_inc.FullName}");
+            }
+            catch (Exception e)
+            {
+                LogService.LogWarning($"Failed to load Assembly {file_name} for mod {pModUid}");
+                LogService.LogWarning(e.Message);
+                LogService.LogWarning(e.StackTrace);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Use the dll compiled on an earlier start when the sources and dependencies have not changed since.
+    /// Runs before the compiler pack is loaded, so a fresh cache costs no Roslyn at all.
+    /// </summary>
+    private static bool TryUseCompileCache(ModDependencyNode pModNode)
+    {
+        var decl = pModNode.mod_decl;
+        var depens = decl.Dependencies.Where(_ready_mods.Contains).ToList();
+        var optional = decl.OptionalDependencies.Where(_ready_mods.Contains).ToList();
+        if (ModInfoUtils.doesModNeedRecompile(decl, depens, optional)) return false;
+
+        LoadAdditionAssemblies(pModNode.GetAdditionReferences(), decl.UID);
+        string dll = Path.Combine(Paths.CompiledModsPath, $"{decl.UID}.dll");
+        ModCompiler.RegisterPrecompiled(decl.UID, dll);
+        LogService.LogInfo($"{decl.UID}: compiled dll is up to date, compiler skipped");
+        return true;
     }
 
     /// <summary>
@@ -124,7 +176,14 @@ public static class ModCompileLoadService
             string main_dll = precompiled_dll_files.FirstOrDefault(file =>
                                   Path.GetFileNameWithoutExtension(file) == pModNode.mod_decl.UID) ??
                               precompiled_dll_files[0];
-            if (CompilerPack.IsLoaded) ModCompiler.RegisterPrecompiled(pModNode.mod_decl.UID, main_dll);
+            ModCompiler.RegisterPrecompiled(pModNode.mod_decl.UID, main_dll);
+            _ready_mods.Add(pModNode.mod_decl.UID);
+            return true;
+        }
+
+        if (!pForce && TryUseCompileCache(pModNode))
+        {
+            _ready_mods.Add(pModNode.mod_decl.UID);
             return true;
         }
 
@@ -137,7 +196,9 @@ public static class ModCompileLoadService
             return false;
         }
 
-        return ModCompiler.CompileNode(pModNode, pForce);
+        bool ok = ModCompiler.CompileNode(pModNode, pForce);
+        if (ok) _ready_mods.Add(pModNode.mod_decl.UID);
+        return ok;
     }
 
 
