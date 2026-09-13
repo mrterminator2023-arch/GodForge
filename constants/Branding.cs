@@ -27,8 +27,8 @@ public static class Branding
     /// <summary>Official channel / homepage</summary>
     public const string Homepage = "https://t.me/GodForgeHub";
 
-    /// <summary>Official source repository. TODO: fill in the real URL before release.</summary>
-    public const string Repository = "https://github.com/godforge-ml/GodForge";
+    /// <summary>Official source repository</summary>
+    public const string Repository = "https://github.com/mrterminator2023-arch/GodForge";
 
     /// <summary>One-line identification string for logs</summary>
     public const string Signature = Name + " (" + ShortName + ") v" + Version + " by " + Author + " - " + License + " - " + Homepage;
